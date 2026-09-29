@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ssc
+      POSTGRES_PASSWORD: ssc_local
+      POSTGRES_DB: ssc
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["ssc-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ssc"]
+      interval: 5s
+      retries: 10
+volumes:
+  ssc-data:

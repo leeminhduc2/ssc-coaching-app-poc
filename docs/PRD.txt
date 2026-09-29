@@ -1,0 +1,479 @@
+01. Tổng quan
+PRD — Nền tảng TFT Coaching Membership
+Tài liệu yêu cầu sản phẩm cho phiên bản Proof of Concept
+1. Tổng quan sản phẩm
+Sản phẩm là một nền tảng coaching Teamfight Tactics theo mô hình membership. Người dùng có thể tìm hiểu đội ngũ coach, đăng ký tier phù hợp, xem thư viện VOD, gửi trận đấu cá nhân để được phân tích và đặt coaching 1-1 tùy theo quyền lợi.
+2. Mục tiêu của PoC
+Trình bày rõ giá trị của dịch vụ coaching TFT và tạo niềm tin bằng hồ sơ, thành tích của coach.
+Minh họa luồng chuyển đổi hoàn chỉnh từ khách truy cập thành hội viên trả phí.
+Chứng minh mô hình tier kế thừa: tier cao hơn có toàn bộ quyền lợi và bố cục chức năng của tier thấp hơn.
+Mô phỏng thư viện VOD có phân quyền, tiến độ xem và nội dung cá nhân.
+Mô phỏng quy trình gửi Google Drive VOD, coach phản hồi và kết quả xuất hiện trong mục VOD của tôi.
+Cung cấp nền tảng dữ liệu 3NF đủ rõ để có thể phát triển thành sản phẩm thật.
+3. Giá trị cốt lõi
+Đối với người chơi
+Có lộ trình học TFT rõ ràng thay vì tự tìm nội dung rời rạc.
+Được học từ coach có thành tích và kinh nghiệm thực tế.
+Nhận phản hồi cá nhân theo đúng mức độ cam kết của từng tier.
+Đối với đơn vị vận hành
+Tạo doanh thu định kỳ từ membership.
+Mở rộng giá trị từ thư viện nội dung sang VOD Review, coaching trực tiếp và Academy.
+Quản lý quyền lợi hàng tháng nhất quán và có khả năng kiểm toán.
+4. Nguyên tắc sản phẩm
+Một khu vực hội viên duy nhất; không tạo bốn sản phẩm hoặc bốn dashboard tách biệt.
+Tier cao hơn mở rộng giao diện tier thấp hơn bằng các module mới.
+Quyền truy cập được quyết định bằng entitlement, không viết cứng theo tên tier.
+Nội dung cá nhân phải riêng tư và chỉ người được cấp quyền mới có thể xem.
+Các CTA chính phải thay đổi theo nhu cầu hiện tại của từng tier.
+5. Phạm vi thành công của PoC
+Có thể demo toàn bộ luồng bằng dữ liệu mẫu mà không phụ thuộc thanh toán, lịch hoặc video streaming thật.
+Người xem demo có thể chuyển qua lại giữa các tier để thấy dashboard kế thừa và mở rộng.
+Các trạng thái quan trọng như khóa nội dung, hết lượt VOD, thanh toán thất bại và link Drive thiếu quyền đều được mô phỏng.
+6. Giả định
+Sản phẩm sử dụng nội dung và bộ icon nguyên bản lấy cảm hứng từ tinh thần xếp hạng TFT; không sao chép tài sản của Riot nếu chưa có quyền.
+Gói membership được tính theo chu kỳ thanh toán của từng người dùng.
+PoC ưu tiên trải nghiệm web responsive; ứng dụng mobile native nằm ngoài phạm vi.
+Tên thương hiệu, giá bán cuối cùng và cổng thanh toán sẽ được xác nhận sau.
+
+02. Phạm vi & Người dùng
+Phạm vi và người dùng
+Đối tượng sử dụng, kiến trúc thông tin và các luồng chính
+1. Nhóm người dùng
+Khách truy cập
+Xem landing page, membership, danh sách coach, hồ sơ coach và nội dung mẫu.
+Đăng ký, đăng nhập hoặc bắt đầu checkout.
+Hội viên Kim Cương
+Truy cập thư viện VOD theo quyền lợi.
+Theo dõi tiến độ xem và lưu video.
+Hội viên Cao Thủ
+Có toàn bộ quyền lợi Kim Cương.
+Nhận một lượt gửi VOD Review trong mỗi chu kỳ.
+Xem lại kết quả cá nhân trong bộ lọc VOD của tôi.
+Hội viên Đại Cao Thủ
+Có toàn bộ quyền lợi Cao Thủ.
+Nhận một buổi coaching 1-1 trong mỗi chu kỳ.
+Hội viên Thách Đấu
+Có toàn bộ quyền lợi Đại Cao Thủ.
+Được tham gia chương trình Academy dài hạn sau khi được xét duyệt.
+Coach
+Xem hàng đợi VOD được phân công, kiểm tra nguồn video và cập nhật trạng thái review.
+Cung cấp video phản hồi, tổng kết và kế hoạch cải thiện.
+Quản lý các buổi coaching được phân công.
+Admin
+Quản lý người dùng, tier, quyền lợi, coach, video và giao dịch.
+Phân công VOD Review, hoàn lượt khi yêu cầu không hợp lệ và xử lý ngoại lệ.
+2. Phạm vi chức năng PoC
+Landing page và CTA Tham gia, Danh sách đội ngũ coaching.
+Danh sách coach, hồ sơ chi tiết, thành tích và liên kết mạng xã hội.
+Trang membership so sánh bốn tier.
+Checkout giả lập với các trạng thái thành công, thất bại và hủy.
+Đăng nhập, đăng ký, quên mật khẩu và xác minh email ở mức giao diện.
+Dashboard hội viên thích ứng theo tier.
+Thư viện VOD, trang xem video, tìm kiếm, lọc, tiến độ và yêu thích.
+Luồng gửi VOD qua Google Drive cho Cao Thủ trở lên.
+Luồng đặt coaching 1-1 cho Đại Cao Thủ trở lên.
+Khu vực Academy cho Thách Đấu ở mức mô phỏng.
+Trang tài khoản, membership, thanh toán, chính sách bảo mật và điều khoản.
+3. Ngoài phạm vi PoC
+Xử lý thẻ hoặc lưu thông tin thanh toán thật.
+Video streaming có DRM.
+Đồng bộ Google Calendar hai chiều.
+Chat thời gian thực với coach.
+Hệ thống giải đấu, scrim và analytics nâng cao.
+Ứng dụng mobile native.
+4. Kiến trúc thông tin
+Khu vực công khai
+Trang chủ.
+Membership.
+Đội ngũ coach.
+Hồ sơ coach.
+Đăng nhập và đăng ký.
+Chính sách bảo mật và điều khoản.
+Khu vực hội viên
+Tổng quan.
+Thư viện VOD.
+Đang xem và Đã lưu.
+VOD của tôi đối với người đủ điều kiện hoặc có review cũ.
+Coaching 1-1 đối với người đủ điều kiện.
+Academy đối với người được ghi danh.
+Tài khoản, membership và thanh toán.
+5. Luồng người dùng chính
+Luồng chuyển đổi
+Landing → Membership → Chọn tier → Đăng nhập hoặc đăng ký → Checkout → Thanh toán thành công → Dashboard.
+Luồng xem video
+Dashboard → Thư viện → Tìm kiếm hoặc lọc → Xem chi tiết video → Phát video → Lưu tiến độ.
+Luồng VOD cá nhân
+Dashboard → Gửi VOD → Dán link Google Drive → Kiểm tra quyền → Gửi yêu cầu → Coach xử lý → Nhận thông báo → VOD của tôi.
+Luồng coaching
+Dashboard → Coaching 1-1 → Chọn coach và khung giờ → Nhập mục tiêu → Xác nhận → Nhận tổng kết sau buổi học.
+
+03. Membership & Dashboard
+Membership và dashboard kế thừa
+Một layout chung được mở rộng dần theo quyền lợi
+1. Trang Membership công khai
+Hero giải thích giá trị của membership.
+Bốn thẻ tier: Kim Cương, Cao Thủ, Đại Cao Thủ và Thách Đấu.
+Giá, chu kỳ thanh toán, mô tả ngắn và CTA.
+Bảng so sánh quyền lợi.
+Testimonial, FAQ và chính sách nâng cấp hoặc hủy gói.
+Tier Thách Đấu dùng CTA Ứng tuyển thay vì mua ngay.
+2. Hệ thống nhận diện tier
+Kim Cương
+Tinh thể xanh lam và cyan, thể hiện việc tự học có hệ thống qua thư viện VOD.
+Cao Thủ
+Tím đậm hoặc ruby, bổ sung cảm giác được phân tích cá nhân.
+Đại Cao Thủ
+Đỏ và vàng kim, nhấn mạnh tương tác trực tiếp với coach.
+Thách Đấu
+Vàng và xanh ngọc, thể hiện tính tuyển chọn, giới hạn và hướng tới thi đấu.
+Bộ icon phải được thiết kế nguyên bản, đồng nhất về hình học và cấp độ chi tiết. Tier cao hơn có thể thêm lớp viền, ánh sáng hoặc chuyển động nhẹ nhưng không thay đổi toàn bộ ngôn ngữ giao diện.
+3. Khung dashboard dùng chung
+Header: logo, tìm kiếm, thông báo và menu người dùng.
+Sidebar: Tổng quan, Thư viện VOD, Đang xem, Đã lưu, Tài khoản và Membership.
+Hero dashboard: tên người dùng, huy hiệu tier, trạng thái gói và CTA chính.
+Khu vực nội dung động: các module được hiển thị theo entitlement.
+Khu vực gợi ý nâng cấp: preview một quyền lợi kế tiếp, không làm lạm dụng trạng thái khóa.
+4. Dashboard theo tier
+Kim Cương
+CTA chính: Tiếp tục xem.
+Video đang xem dở, video mới theo patch, chủ đề đề xuất và tiến độ học.
+Preview quyền lợi VOD Review của Cao Thủ.
+Cao Thủ
+Kế thừa toàn bộ dashboard Kim Cương.
+CTA chính: Gửi VOD tháng này.
+Widget hiển thị lượt VOD còn lại, trạng thái yêu cầu gần nhất và phản hồi mới từ coach.
+Sidebar bổ sung VOD của tôi và Gửi VOD.
+Đại Cao Thủ
+Kế thừa toàn bộ dashboard Cao Thủ.
+CTA chính: Đặt lịch coaching.
+Widget coaching hiển thị quyền lợi, coach, lịch sắp tới, checklist chuẩn bị và bản tổng kết.
+Sidebar bổ sung Coaching 1-1, Lịch của tôi và Kế hoạch luyện tập.
+Thách Đấu
+Kế thừa toàn bộ dashboard Đại Cao Thủ.
+CTA chính: Xem kế hoạch tuần.
+Academy Workspace nằm ở đầu dashboard: tuần hiện tại, mục tiêu, bài tập, check-in, VOD cần gửi và tiến độ.
+Các module tier thấp hơn vẫn truy cập được nhưng có thể gom vào khu vực Tài nguyên.
+5. Quy tắc hiển thị
+Quyền mở module dựa trên entitlement hiệu lực, không dựa vào chuỗi tên tier.
+Sidebar chỉ hiển thị module người dùng có thể dùng; dashboard có thể hiển thị một preview nâng cấp.
+Khi nâng cấp, giao diện giữ nguyên cấu trúc quen thuộc và bổ sung module mới.
+Khi hạ cấp, quyền gửi yêu cầu mới bị khóa nhưng nội dung cá nhân đã hoàn thành vẫn được giữ.
+Admin có thể cấu hình giá, mô tả và trạng thái mở bán mà không thay đổi mã nguồn.
+
+04. Thư viện VOD
+Thư viện VOD
+Nội dung học tập, phân quyền và VOD cá nhân
+1. Mục tiêu
+Thư viện VOD là giá trị nền tảng của mọi membership. Người dùng cần tìm được nội dung phù hợp nhanh, hiểu nội dung nào được truy cập và tiếp tục học từ vị trí trước đó.
+2. Trang danh sách
+Tìm kiếm theo tên video hoặc từ khóa.
+Lọc theo patch, chủ đề, coach, trình độ và loại video.
+Sắp xếp theo mới nhất hoặc phổ biến.
+Các tab: Tất cả, VOD Review công khai, VOD của tôi, Đang xem và Đã lưu.
+Hiển thị trạng thái miễn phí, đã mở khóa hoặc yêu cầu membership.
+Phân trang hoặc tải thêm.
+3. Thẻ video
+Thumbnail, tiêu đề, thời lượng và ngày xuất bản.
+Coach phụ trách.
+Patch và tag chủ đề.
+Thanh tiến độ nếu người dùng đã xem.
+Biểu tượng khóa và tier yêu cầu nếu chưa đủ quyền.
+4. Trang xem video
+Trình phát video.
+Mô tả, coach, thời lượng, patch và tag.
+Lưu tiến độ tự động.
+Đánh dấu đã hoàn thành.
+Thêm hoặc bỏ khỏi danh sách xem sau.
+Video liên quan.
+CTA nâng cấp nếu nội dung chưa được mở khóa.
+5. Bộ lọc VOD của tôi
+Xuất hiện cho người dùng Cao Thủ trở lên.
+Cũng có thể tiếp tục xuất hiện cho người đã hạ tier nhưng còn lịch sử Personal VOD Review.
+Chỉ trả về video kết quả gắn với yêu cầu VOD của chính người dùng.
+Không trộn VOD cá nhân với VOD Review công khai.
+Cho phép lọc theo coach, trạng thái hoàn thành và chu kỳ membership.
+6. Quyền truy cập
+Video public không yêu cầu đăng nhập.
+Video membership yêu cầu entitlement tương ứng.
+Personal VOD Review yêu cầu access grant riêng cho chủ sở hữu, coach được phân công hoặc admin.
+Không sử dụng URL video như một cơ chế bảo mật.
+Khi kiểm tra quyền thất bại, giao diện phải dừng phát video và hiển thị CTA phù hợp.
+7. Tiến độ học
+Ghi nhận vị trí xem gần nhất.
+Hiển thị Tiếp tục xem trên dashboard.
+Đánh dấu hoàn thành khi đạt ngưỡng cấu hình hoặc khi người dùng chủ động xác nhận.
+Tiến độ là dữ liệu cá nhân và không hiển thị công khai.
+8. Dữ liệu mẫu cho PoC
+Ít nhất mười hai video thuộc nhiều chủ đề.
+Hai video miễn phí.
+Một số video khóa theo membership.
+Hai Personal VOD Review thuộc tài khoản demo Cao Thủ trở lên.
+Một video đang xem dở và một video đã hoàn thành.
+
+05. VOD cá nhân & Coaching
+VOD cá nhân và Coaching
+Cấp lượt, gửi Google Drive, xử lý review và coaching 1-1
+1. Điều kiện gửi Personal VOD Review
+Người dùng có subscription đang hoạt động.
+Entitlement hiệu lực có MONTHLY_VOD_REVIEW.
+Benefit allocation của chu kỳ hiện tại còn ít nhất một lượt.
+Không có yêu cầu khác đang giữ cùng một lượt.
+2. Form gửi VOD
+Tiêu đề trận đấu.
+Link Google Drive.
+Rank tại thời điểm gửi.
+Vấn đề muốn coach tập trung: economy, positioning, transition, augment hoặc nội dung khác.
+Ghi chú bổ sung.
+Coach mong muốn, nếu chính sách cho phép lựa chọn.
+Xác nhận người dùng có quyền chia sẻ video và đồng ý cho coach truy cập.
+3. Kiểm tra link Google Drive
+Kiểm tra định dạng URL và lấy external file ID.
+Kiểm tra file tồn tại và có thể truy cập bởi coach hoặc tài khoản dịch vụ.
+Không yêu cầu người dùng công khai file cho toàn bộ Internet nếu có thể chia sẻ trực tiếp cho tài khoản xử lý.
+Nếu thiếu quyền, hiển thị hướng dẫn cấp quyền và cho phép kiểm tra lại.
+Mã hóa URL nguồn trong database và che bớt khi hiển thị.
+4. Sử dụng lượt VOD
+Khi người dùng bấm gửi, hệ thống tạo benefit usage ở trạng thái reserved. Sau khi link hợp lệ và coach nhận yêu cầu, usage chuyển thành consumed. Nếu link không hợp lệ, request bị từ chối hoặc admin hủy trước khi coach xử lý, usage chuyển thành released để hoàn lượt.
+5. Trạng thái yêu cầu
+Draft: người dùng chưa gửi.
+Submitted: đã gửi yêu cầu.
+Validating: đang kiểm tra nguồn video.
+Needs permission: link hợp lệ nhưng coach chưa có quyền.
+Queued: yêu cầu hợp lệ và đang chờ phân công.
+Assigned: đã có coach phụ trách.
+In review: coach đang phân tích.
+Completed: đã có kết quả.
+Cancelled hoặc Rejected: yêu cầu đã dừng và có lý do.
+6. Kết quả review
+Video phản hồi của coach.
+Tóm tắt điểm mạnh và điểm yếu.
+Các lỗi chính theo giai đoạn trận.
+Đề xuất luyện tập hoặc mục tiêu cho chu kỳ tiếp theo.
+Kết quả tự động xuất hiện trong VOD của tôi.
+Gửi thông báo trong ứng dụng và email khi hoàn tất.
+7. Quy tắc nghiệp vụ
+Mặc định mỗi entitlement cấp một lượt theo chu kỳ thanh toán.
+Lượt chưa dùng không tự động cộng dồn, trừ khi chính sách kinh doanh thay đổi.
+Hạ tier không xóa review đã hoàn thành.
+Yêu cầu đã consumed không hoàn lượt sau khi coach bắt đầu xử lý, trừ quyết định của admin.
+Chỉ chủ sở hữu, coach được phân công và admin có quyền truy cập nguồn VOD.
+8. Coaching 1-1
+Áp dụng cho Đại Cao Thủ trở lên.
+Người dùng chọn coach, khung giờ, timezone và mục tiêu buổi học.
+Hệ thống giữ một coaching credit khi xác nhận lịch.
+Dashboard hiển thị buổi sắp tới và checklist chuẩn bị.
+Sau buổi học, coach thêm tổng kết và kế hoạch luyện tập.
+Hủy hoặc đổi lịch tuân theo thời hạn do vận hành quy định.
+9. Challenger Academy
+Người dùng gửi đơn ứng tuyển thay vì mua trực tiếp.
+Admin hoặc coach duyệt ghi danh.
+Workspace hiển thị mục tiêu, kế hoạch tuần, check-in, VOD và tiến độ.
+Số suất giới hạn và trạng thái mở đơn phải hiển thị rõ.
+
+06. Thanh toán & Tài khoản
+Thanh toán và tài khoản
+Đăng nhập, checkout, quản lý subscription và pháp lý
+1. Đăng ký và đăng nhập
+Đăng ký bằng email và mật khẩu.
+Xác minh email.
+Đăng nhập và ghi nhớ phiên.
+Quên mật khẩu và đặt lại mật khẩu.
+Hiển thị hoặc ẩn mật khẩu.
+Đồng ý điều khoản và chính sách bảo mật khi đăng ký.
+Sau đăng nhập, quay lại đúng trang hoặc checkout trước đó.
+2. Checkout
+Hiển thị tier, chu kỳ, giá và danh sách quyền lợi.
+Cho phép nhập mã giảm giá ở mức mô phỏng.
+Yêu cầu xác nhận điều khoản gia hạn và hủy.
+Không lưu số thẻ hoặc CVV trong database ứng dụng.
+Hiển thị trạng thái đang xử lý để tránh gửi nhiều lần.
+3. Trạng thái thanh toán
+Pending: chờ cổng thanh toán phản hồi.
+Succeeded: kích hoạt subscription và cấp quyền lợi.
+Failed: giữ tài khoản nhưng không cấp quyền.
+Cancelled: người dùng rời checkout.
+Refunded: giao dịch được hoàn và chuyển cho quy tắc vận hành xử lý quyền lợi.
+4. Trang thanh toán thành công
+Xác nhận tier và chu kỳ.
+Tóm tắt quyền lợi vừa mở khóa.
+CTA vào dashboard.
+Nếu là Thách Đấu, hiển thị trạng thái ghi danh hoặc xét duyệt thay vì kích hoạt trực tiếp.
+5. Trang tài khoản
+Thông tin cá nhân
+Tên hiển thị, avatar, Riot ID, khu vực, rank và timezone.
+Membership
+Tier hiện tại, trạng thái, ngày bắt đầu và ngày kết thúc chu kỳ.
+Nâng cấp, hạ cấp hoặc hủy gia hạn.
+Quyền lợi hiện tại và số lượt còn lại được tính theo thời gian thực.
+Thanh toán
+Lịch sử giao dịch và trạng thái.
+Liên kết hóa đơn nếu cổng thanh toán cung cấp.
+Bảo mật và thông báo
+Đổi mật khẩu.
+Đăng xuất khỏi phiên hiện tại.
+Cấu hình email về VOD, coaching và thanh toán.
+6. Trang pháp lý
+Chính sách bảo mật.
+Điều khoản sử dụng.
+Chính sách membership, gia hạn và hủy.
+Quy định sử dụng nội dung video và quyền chia sẻ VOD.
+Tuyên bố sản phẩm không liên kết chính thức với Riot Games.
+7. Yêu cầu bảo mật tối thiểu
+Mật khẩu được băm bằng thuật toán chuyên dụng.
+Session có thời hạn và cookie an toàn.
+Kiểm tra quyền ở backend cho mọi video và VOD cá nhân.
+Không ghi link Drive đầy đủ vào log thông thường.
+Webhook thanh toán phải có chữ ký và khả năng xử lý idempotent.
+Admin và coach chỉ truy cập dữ liệu đúng phạm vi công việc.
+
+07. Mô hình dữ liệu 3NF
+Mô hình dữ liệu 3NF
+Thiết kế quan hệ chuẩn hóa cho PoC và khả năng mở rộng
+1. Nguyên tắc
+Thông tin đăng nhập và hồ sơ người dùng được gộp trong bảng users.
+Mỗi người dùng có đúng một role.
+Không lưu dữ liệu có thể suy ra như current plan, số lượt còn lại hoặc phần trăm xem.
+Không lặp user_id, plan_id hoặc coach metadata khi đã truy ra được qua khóa ngoại.
+Giá, quyền lợi, allocation và usage là các thực thể riêng.
+2. Người dùng
+users
+id; email duy nhất; password_hash; role; display_name; avatar_url; riot_id; riot_region_id; current_rank_id; timezone; status; email_verified_at; created_at; updated_at.
+riot_regions
+id; code duy nhất; name.
+tft_ranks
+id; code duy nhất; name; display_order.
+3. Membership và quyền lợi
+membership_plans
+id; parent_plan_id tự tham chiếu; code duy nhất; name; description; icon_key; theme_key; display_order; is_invite_only; is_active; timestamps.
+membership_prices
+id; plan_id; billing_period; currency_code; amount_minor; valid_from; valid_until; is_active.
+entitlements
+id; code duy nhất; name; description; unit_type.
+plan_entitlements
+plan_id và entitlement_id là khóa ghép; quantity; reset_period. Chỉ lưu quyền lợi được bổ sung trực tiếp tại tier đó.
+4. Subscription và thanh toán
+subscriptions
+id; user_id; membership_price_id; payment_provider_id; external_subscription_id; status; current_period_start; current_period_end; cancel_at_period_end; cancelled_at; timestamps.
+payment_providers
+id; code duy nhất; name.
+payment_customers
+user_id và payment_provider_id là khóa ghép; external_customer_id duy nhất; created_at.
+payments
+id; subscription_id; external_payment_id duy nhất; amount_minor; currency_code; status; paid_at; failed_at; failure_reason; created_at.
+5. Phân bổ và sử dụng quyền lợi
+benefit_allocations
+id; subscription_id; entitlement_id; period_start; period_end; granted_quantity; expires_at; status; created_at. Duy nhất theo subscription, entitlement và period_start.
+benefit_usages
+id; allocation_id; quantity; status reserved, consumed hoặc released; reserved_at; consumed_at; released_at; created_at.
+Số lượt còn lại bằng granted_quantity trừ tổng usage đang reserved hoặc consumed. Không lưu remaining_quantity.
+6. Video và VOD Review
+videos
+id; coach_id; title; slug duy nhất; description; video_type; visibility; thumbnail_url; duration_seconds; status; published_at; timestamps.
+video_sources
+id; video_id; media_provider_id; external_video_id; playback_url_encrypted; created_at.
+video_entitlement_requirements
+video_id và entitlement_id là khóa ghép.
+video_access_grants
+id; video_id; user_id; grant_reason; granted_at; expires_at. Duy nhất theo video, user và lý do cấp.
+vod_review_requests
+id; user_id; assigned_coach_id; benefit_usage_id duy nhất; title; rank_id_at_submission; requested_focus; member_notes; status và các timestamp nghiệp vụ.
+vod_sources
+id; vod_review_request_id duy nhất; source_provider_id; external_file_id; source_url_encrypted; display_url_masked; access_status; last_access_checked_at; timestamps.
+vod_review_results
+vod_review_request_id là khóa chính; video_id duy nhất; coach_summary; created_at.
+7. Tiến độ và phân loại nội dung
+tags và video_tags
+tags gồm id, name, slug duy nhất và tag_type. video_tags dùng khóa ghép video_id, tag_id.
+video_progress
+Khóa ghép user_id, video_id; position_seconds; started_at; last_watched_at; completed_at.
+video_favorites
+Khóa ghép user_id, video_id; created_at.
+8. Coach và coaching
+coaches
+id; user_id duy nhất; slug duy nhất; headline; bio; years_experience; peak_rank_id; các cờ nhận review, nhận session và active; display_order.
+coach_achievements
+id; coach_id; title; event_name; set_name; placement; description; achieved_at; proof_url; display_order.
+social_platforms và coach_social_links
+social_platforms định nghĩa nền tảng. coach_social_links dùng khóa ghép coach_id, social_platform_id và lưu URL.
+coaching_sessions
+id; user_id; coach_id; benefit_usage_id duy nhất; scheduled_start; scheduled_end; timezone; session_type; status; meeting_url; member_goal; member_notes; coach_summary; completed_at; timestamps.
+9. Các ràng buộc quan trọng
+Không cho membership plan tạo vòng lặp kế thừa.
+Một benefit usage chỉ được liên kết với một VOD Review hoặc một coaching session.
+Một VOD Review chỉ có một kết quả chính thức.
+Personal VOD video phải có access grant cho chủ sở hữu.
+Mọi thay đổi trạng thái usage và request phải thực hiện trong cùng transaction.
+Database không lưu dữ liệu thẻ thanh toán.
+
+08. Nghiệm thu & Lộ trình
+Tiêu chí nghiệm thu và lộ trình
+Điều kiện để PoC được coi là hoàn chỉnh
+1. Landing và coach
+Landing truyền đạt rõ giá trị dịch vụ và có CTA Tham gia, Danh sách đội ngũ coaching.
+Danh sách coach hiển thị hồ sơ, chuyên môn và thành tích.
+Có trang chi tiết và liên kết mạng xã hội cho coach.
+Giao diện hoạt động tốt trên desktop và mobile.
+2. Membership
+Hiển thị đủ bốn tier và quyền lợi kế thừa.
+Icon và màu tier phân biệt được nhưng cùng một hệ thiết kế.
+Người dùng có thể chuyển tier demo và thấy dashboard thay đổi ngay.
+Thách Đấu sử dụng luồng ứng tuyển thay vì mua trực tiếp.
+3. Dashboard
+Tất cả tier sử dụng cùng một shell.
+Kim Cương thấy thư viện và tiến độ học.
+Cao Thủ thấy thêm VOD Review.
+Đại Cao Thủ thấy thêm Coaching 1-1.
+Thách Đấu thấy thêm Academy Workspace.
+CTA chính thay đổi đúng theo tier.
+4. Thư viện VOD
+Tìm kiếm, lọc và mở trang video hoạt động với dữ liệu mẫu.
+Video khóa không phát được nếu thiếu quyền.
+Tiến độ xem được lưu và hiển thị lại.
+VOD của tôi chỉ hiển thị review thuộc người dùng hiện tại.
+5. Personal VOD Review
+Chỉ người dùng có entitlement và còn lượt mới gửi được.
+Form nhận link Google Drive và các thông tin cần thiết.
+PoC mô phỏng được trạng thái link hợp lệ và thiếu quyền.
+Lượt được reserved, consumed hoặc released đúng theo trạng thái.
+Sau khi hoàn thành, kết quả xuất hiện trong VOD của tôi.
+Người không có access grant không thể mở Personal VOD.
+6. Coaching và Academy
+Đại Cao Thủ trở lên đặt được một buổi coaching mẫu.
+Dashboard hiển thị lịch, coach và mục tiêu buổi học.
+Thách Đấu có Academy Workspace và trạng thái ghi danh.
+7. Thanh toán và tài khoản
+Checkout hiển thị đúng tier, giá và quyền lợi.
+Có màn hình thành công, thất bại và hủy.
+Tài khoản hiển thị hồ sơ, subscription và lịch sử giao dịch mẫu.
+Có trang chính sách bảo mật và điều khoản.
+8. Yêu cầu phi chức năng
+Giao diện responsive và điều hướng bằng bàn phím ở mức cơ bản.
+Trạng thái loading, empty, error và permission denied được thiết kế.
+Không lộ link VOD cá nhân trong log hoặc giao diện không liên quan.
+Kiểm tra quyền luôn được thực hiện ở backend.
+Dữ liệu mẫu không chứa thông tin cá nhân thật.
+9. Dữ liệu demo cần chuẩn bị
+Bốn tài khoản hội viên đại diện cho bốn tier.
+Ít nhất hai coach với hồ sơ và thành tích.
+Ít nhất mười hai video, gồm public, membership và personal.
+Một yêu cầu VOD ở mỗi trạng thái chính.
+Một coaching session sắp tới và một session đã hoàn thành.
+Một hồ sơ Academy đang hoạt động.
+10. Lộ trình đề xuất
+Giai đoạn 1 — PoC giao diện
+Landing, membership, coach, auth, dashboard tier-aware và dữ liệu mẫu.
+Giai đoạn 2 — Luồng nghiệp vụ
+Subscription, entitlement, VOD credits, thư viện, VOD Review và coaching.
+Giai đoạn 3 — Tích hợp thật
+Cổng thanh toán, email, video hosting, Google Drive access check và lịch coach.
+Giai đoạn 4 — Vận hành và mở rộng
+Admin, analytics, Academy nâng cao, automation và tối ưu chuyển đổi.
+11. Quyết định còn mở
+Giá và chu kỳ thanh toán cuối cùng của từng tier.
+Lượt VOD có được cộng dồn hay không.
+Người dùng có được chọn coach khi gửi VOD hay hệ thống tự phân công.
+Chính sách hủy và đổi lịch coaching.
+Cách chia sẻ Google Drive: chia sẻ cho email coach hay tài khoản dịch vụ chung.
+Nhà cung cấp thanh toán và video hosting.
+Tên thương hiệu và bộ nhận diện cuối cùng.
+

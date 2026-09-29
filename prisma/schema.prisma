@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+model User {
+  id String @id @default(uuid())
+  email String @unique
+  passwordHash String
+  displayName String
+  role String @default("member")
+  riotId String @default("")
+  rank String @default("Kim Cương")
+  timezone String @default("Asia/Ho_Chi_Minh")
+  verified Boolean @default(false)
+  createdAt DateTime @default(now())
+  sessions AuthSession[]
+  subscriptions Subscription[]
+  coach Coach?
+  grants AccessGrant[]
+  progress Progress[]
+  favorites Favorite[]
+  reviews Review[]
+  bookings Booking[]
+  enrollment Enrollment?
+  notifications Notification[]
+  tokens AuthToken[]
+}
+model AuthSession {
+  id String @id @default(uuid())
+  tokenHash String @unique
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  expiresAt DateTime
+}
+model AuthToken {
+  id String @id @default(uuid())
+  tokenHash String @unique
+  kind String
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  expiresAt DateTime
+}
+model Plan {
+  id String @id
+  name String
+  description String
+  color String
+  parentId String?
+  parent Plan? @relation("Inheritance",fields:[parentId],references:[id])
+  children Plan[] @relation("Inheritance")
+  inviteOnly Boolean @default(false)
+  active Boolean @default(true)
+  order Int
+  prices Price[]
+  entitlements PlanEntitlement[]
+}
+model Price {
+  id String @id @default(uuid())
+  planId String
+  plan Plan @relation(fields:[planId],references:[id])
+  amount Int
+  currency String @default("VND")
+  active Boolean @default(true)
+  subscriptions Subscription[]
+}
+model Entitlement {
+  code String @id
+  name String
+  plans PlanEntitlement[]
+  allocations Allocation[]
+}
+model PlanEntitlement {
+  planId String
+  plan Plan @relation(fields:[planId],references:[id])
+  code String
+  entitlement Entitlement @relation(fields:[code],references:[code])
+  quantity Int @default(1)
+  @@id([planId,code])
+}
+model Subscription {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  priceId String
+  price Price @relation(fields:[priceId],references:[id])
+  status String @default("active")
+  start DateTime
+  end DateTime
+  cancelAtEnd Boolean @default(false)
+  allocations Allocation[]
+  payments Payment[]
+  @@index([userId,status,end])
+}
+model Allocation {
+  id String @id @default(uuid())
+  subscriptionId String
+  subscription Subscription @relation(fields:[subscriptionId],references:[id])
+  code String
+  entitlement Entitlement @relation(fields:[code],references:[code])
+  quantity Int @default(1)
+  start DateTime
+  end DateTime
+  usages Usage[]
+  @@unique([subscriptionId,code,start])
+}
+model Usage {
+  id String @id @default(uuid())
+  allocationId String
+  allocation Allocation @relation(fields:[allocationId],references:[id])
+  status String @default("reserved")
+  createdAt DateTime @default(now())
+  review Review?
+  booking Booking?
+}
+model Payment {
+  id String @id @default(uuid())
+  subscriptionId String
+  subscription Subscription @relation(fields:[subscriptionId],references:[id])
+  eventId String @unique
+  amount Int
+  status String
+  createdAt DateTime @default(now())
+}
+model WebhookEvent {
+  id String @id
+  createdAt DateTime @default(now())
+}
+model Idempotency {
+  key String @id
+  response Json
+  createdAt DateTime @default(now())
+}
+model Coach {
+  id String @id
+  userId String @unique
+  user User @relation(fields:[userId],references:[id])
+  slug String @unique
+  headline String
+  bio String
+  image String
+  specialty String
+  achievements Achievement[]
+  videos Video[]
+  reviews Review[]
+  bookings Booking[]
+}
+model Achievement {
+  id String @id @default(uuid())
+  coachId String
+  coach Coach @relation(fields:[coachId],references:[id])
+  title String
+  description String
+}
+model Video {
+  id String @id @default(uuid())
+  title String
+  description String
+  coachId String
+  coach Coach @relation(fields:[coachId],references:[id])
+  image String
+  duration Int
+  patch String
+  topic String
+  level String
+  type String @default("lesson")
+  visibility String @default("membership")
+  publishedAt DateTime @default(now())
+  grants AccessGrant[]
+  progress Progress[]
+  favorites Favorite[]
+  result ReviewResult?
+  @@index([visibility,publishedAt])
+}
+model AccessGrant {
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  videoId String
+  video Video @relation(fields:[videoId],references:[id])
+  @@id([userId,videoId])
+}
+model Progress {
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  videoId String
+  video Video @relation(fields:[videoId],references:[id])
+  position Int
+  completed Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  @@id([userId,videoId])
+}
+model Favorite {
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  videoId String
+  video Video @relation(fields:[videoId],references:[id])
+  @@id([userId,videoId])
+}
+model Review {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  coachId String?
+  coach Coach? @relation(fields:[coachId],references:[id])
+  usageId String @unique
+  usage Usage @relation(fields:[usageId],references:[id])
+  title String
+  rank String
+  focus String
+  notes String
+  status String
+  createdAt DateTime @default(now())
+  source VodSource?
+  result ReviewResult?
+  @@index([userId,status])
+}
+model VodSource {
+  reviewId String @id
+  review Review @relation(fields:[reviewId],references:[id])
+  encryptedUrl String
+  fileId String
+  access String
+}
+model ReviewResult {
+  reviewId String @id
+  review Review @relation(fields:[reviewId],references:[id])
+  videoId String @unique
+  video Video @relation(fields:[videoId],references:[id])
+  summary String
+}
+model Booking {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  coachId String
+  coach Coach @relation(fields:[coachId],references:[id])
+  usageId String @unique
+  usage Usage @relation(fields:[usageId],references:[id])
+  start DateTime
+  goal String
+  status String @default("scheduled")
+  summary String?
+  @@index([coachId,start])
+}
+model Enrollment {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields:[userId],references:[id])
+  status String @default("pending")
+  goal String
+  tasks AcademyTask[]
+}
+model AcademyTask {
+  id String @id @default(uuid())
+  enrollmentId String
+  enrollment Enrollment @relation(fields:[enrollmentId],references:[id])
+  title String
+  completed Boolean @default(false)
+}
+model Notification {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id])
+  message String
+  read Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+model Audit {
+  id String @id @default(uuid())
+  actorId String
+  action String
+  targetId String
+  reason String
+  createdAt DateTime @default(now())
+}

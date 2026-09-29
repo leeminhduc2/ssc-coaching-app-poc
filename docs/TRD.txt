@@ -1,0 +1,742 @@
+01. Kiến trúc tổng quan
+TRD — Nền tảng TFT Coaching Membership
+Thiết kế kỹ thuật cho PostgreSQL, NestJS và React + Vite
+1. Tài liệu liên quan
+PRD tham chiếu:
+PRD — Nền tảng TFT Coaching Membershipn
+2. Mục tiêu kỹ thuật
+Xây dựng PoC có thể demo đầy đủ các luồng trong PRD nhưng vẫn có cấu trúc đủ sạch để phát triển thành sản phẩm thật.
+Bảo đảm dashboard và quyền truy cập kế thừa theo entitlement thay vì viết cứng theo tên tier.
+Bảo vệ nội dung membership và Personal VOD Review ở backend.
+Hỗ trợ thanh toán, Google Drive, email và media thông qua adapter có thể thay nhà cung cấp.
+Giữ mô hình dữ liệu quan hệ tuân theo 3NF.
+3. Kiến trúc được chọn
+Hệ thống sử dụng modular monolith. Frontend là ứng dụng React được build bằng Vite. Backend là một NestJS API được chia thành các module nghiệp vụ. PostgreSQL là nguồn dữ liệu chính. Tác vụ nền có thể sử dụng Redis và BullMQ khi tích hợp thật; PoC được phép chạy đồng bộ hoặc mock các tác vụ bên ngoài.
+Các thành phần
+Web client: React, Vite và TypeScript.
+API server: NestJS và TypeScript.
+Data access: Prisma ORM và Prisma Migrate.
+Database: PostgreSQL.
+Cache và queue: Redis, tùy chọn trong PoC và bắt buộc khi bật worker thật.
+External adapters: Google Drive, payment provider, email provider và video provider.
+Static assets: CDN hoặc object storage.
+4. Sơ đồ luồng logic
+Browser → CDN hoặc static host → React application → NestJS REST API → PostgreSQL.
+NestJS API → Google Drive adapter, payment adapter, email adapter và video provider adapter.
+NestJS API → queue → background worker đối với kiểm tra Drive, email, webhook follow-up và tác vụ dài.
+5. Lý do chọn modular monolith
+Phù hợp quy mô PoC và nhóm phát triển nhỏ.
+Giảm chi phí vận hành so với microservices.
+Transaction giữa subscription, entitlement, allocation và usage dễ bảo đảm.
+Ranh giới module vẫn cho phép tách payment, media hoặc notification thành dịch vụ riêng sau này.
+6. Nguyên tắc kiến trúc
+Database là nguồn sự thật cho subscription, entitlement và usage.
+Frontend không tự quyết định quyền truy cập; mọi thao tác nhạy cảm được backend kiểm tra lại.
+Mọi thao tác có ảnh hưởng tài chính hoặc tiêu thụ quyền lợi phải idempotent và chạy trong transaction.
+Không lưu thông tin thẻ thanh toán.
+Không dùng URL media như cơ chế bảo mật.
+Module giao tiếp qua service interface hoặc domain event, không truy cập trực tiếp bảng của nhau ngoài data layer được định nghĩa.
+7. Mục tiêu phi chức năng
+API đọc thông thường có thời gian phản hồi p95 mục tiêu dưới 500 ms trong môi trường staging.
+Danh sách video sử dụng phân trang và index phù hợp.
+Giao diện responsive, hỗ trợ bàn phím và trạng thái loading, empty, error.
+Log có request ID nhưng không chứa mật khẩu, token, URL Drive đầy đủ hoặc dữ liệu thẻ.
+Migrations có thể chạy lặp an toàn trong pipeline và có chiến lược rollback.
+8. Quyết định chưa khóa
+Nhà cung cấp thanh toán.
+Nhà cung cấp email.
+Nền tảng video hosting và cơ chế signed playback.
+Google Drive dùng service account chung hay email riêng của coach.
+Nền tảng cloud và CDN.
+
+02. Repo & Môi trường
+Repository và môi trường
+Cấu trúc mã nguồn, cấu hình và quy trình phát triển
+1. Cấu trúc repository
+Khuyến nghị monorepo TypeScript để chia sẻ type, API contract và tooling.
+apps/web: React + Vite.
+apps/api: NestJS HTTP API.
+apps/worker: NestJS standalone worker hoặc tiến trình BullMQ.
+packages/contracts: kiểu dữ liệu, enum và API schemas dùng chung.
+packages/ui: component dùng chung nếu cần.
+packages/config: ESLint, TypeScript và test config.
+prisma: schema, migrations và seed.
+infra: Docker, compose và cấu hình triển khai.
+2. Công cụ phát triển
+TypeScript bật strict mode.
+pnpm workspace để quản lý dependency.
+ESLint và Prettier.
+Vitest cho frontend unit test.
+Jest hoặc Vitest cho backend unit test; Supertest cho API integration test.
+Playwright cho end-to-end test.
+3. Môi trường
+Local
+Frontend và backend chạy hot reload.
+PostgreSQL và Redis chạy bằng Docker Compose.
+Payment, email, Drive và video mặc định dùng adapter mock.
+Staging
+Dữ liệu giả lập không chứa PII thật.
+Dùng sandbox của payment provider và integration credentials riêng.
+Chạy migration tự động trước khi phát hành API.
+Production
+Dùng managed PostgreSQL, TLS và backup tự động.
+Secrets lưu trong secret manager.
+Tách quyền truy cập của web, API, worker và CI.
+4. Biến môi trường
+DATABASE_URL.
+REDIS_URL.
+APP_BASE_URL và API_BASE_URL.
+SESSION_SECRET hoặc token signing keys.
+GOOGLE_DRIVE_SERVICE_ACCOUNT hoặc cấu hình OAuth tương ứng.
+PAYMENT_PROVIDER_SECRET và PAYMENT_WEBHOOK_SECRET.
+EMAIL_PROVIDER_KEY.
+MEDIA_PROVIDER_KEY.
+FIELD_ENCRYPTION_KEY cho dữ liệu nhạy cảm như source URL.
+5. Quy tắc cấu hình
+Ứng dụng phải dừng khởi động nếu thiếu biến bắt buộc.
+Không commit file chứa secret.
+Frontend chỉ nhận biến có prefix công khai được Vite cho phép.
+Backend không trả secret hoặc internal provider ID ra client.
+6. Database workflow
+Mọi thay đổi schema đi kèm migration được review.
+Không sửa migration đã chạy ở staging hoặc production.
+Seed chia thành catalog seed và demo seed.
+Catalog seed tạo rank, region, entitlement, plan và tag.
+Demo seed tạo coach, user, video, review và coaching session giả lập.
+7. CI/CD tối thiểu
+Install với lockfile cố định.
+Lint và typecheck.
+Unit test.
+Build web và API.
+Integration test với PostgreSQL tạm thời.
+Kiểm tra migration.
+Deploy staging và chạy smoke test.
+8. Quy ước branch và release
+Pull request bắt buộc pass CI.
+Không deploy production trực tiếp từ máy phát triển.
+Build artifact bất biến được promote từ staging sang production.
+Mỗi release ghi nhận migration và thay đổi cấu hình đi kèm.
+
+03. Frontend React + Vite
+Frontend React + Vite
+Kiến trúc giao diện, routing, state và phân quyền hiển thị
+1. Stack đề xuất
+React và TypeScript.
+Vite cho development server và production build.
+React Router cho routing.
+TanStack Query cho server state, cache và invalidation.
+React Hook Form và Zod cho form.
+Tailwind CSS hoặc hệ thống CSS token tương đương; quyết định UI library cuối cùng là TBD.
+Vitest, Testing Library và Playwright.
+2. Routing
+Public routes
+Trang chủ.
+Membership.
+Danh sách coach và hồ sơ coach.
+Đăng nhập, đăng ký và quên mật khẩu.
+Chính sách bảo mật và điều khoản.
+Member routes
+Dashboard.
+Thư viện VOD và trang xem video.
+VOD của tôi.
+Gửi VOD Review.
+Coaching 1-1 và lịch của tôi.
+Academy Workspace.
+Tài khoản, membership và thanh toán.
+Coach và admin routes
+Coach review queue và request detail.
+Coach session list.
+Admin users, plans, content, payments và assignments.
+3. Dashboard tier-aware
+Dashboard chỉ có một layout shell. Module được render từ danh sách entitlement trả về bởi API.
+VIDEO_LIBRARY mở library widgets.
+MONTHLY_VOD_REVIEW mở VOD quota, submit và My VODs.
+MONTHLY_1ON1_COACHING mở booking và session widgets.
+ACADEMY_ACCESS mở Academy Workspace.
+Upgrade preview là cấu hình UI riêng và không được coi là quyền truy cập.
+4. State management
+TanStack Query quản lý dữ liệu server.
+Auth state giữ user và effective entitlements từ endpoint session.
+UI state cục bộ dùng React state hoặc context nhỏ.
+Không sao chép server data vào global store nếu không cần.
+Sau mutation phải invalidate đúng query key thay vì reload toàn trang.
+5. API client
+Một client trung tâm cấu hình base URL, cookie, timeout và request ID.
+Chuẩn hóa error envelope thành lỗi hiển thị được.
+Tự xử lý 401 bằng refresh hoặc chuyển tới login theo chiến lược auth.
+Không retry tự động các POST có side effect nếu không có idempotency key.
+6. Form
+Validation phía client phục vụ trải nghiệm; backend vẫn là nguồn xác thực cuối cùng.
+Form gửi VOD kiểm tra định dạng Google Drive trước khi gửi.
+Form checkout khóa nút khi đang xử lý.
+Thông báo lỗi phải chỉ rõ trường và cách khắc phục.
+7. Video player
+Player nhận playback descriptor từ API sau khi backend kiểm tra quyền.
+Lưu tiến độ theo khoảng thời gian và khi người dùng rời trang.
+Không nhúng trực tiếp URL private cố định vào bundle.
+Có trạng thái token hết hạn và yêu cầu cấp playback descriptor mới.
+8. Thiết kế component
+AppShell, PublicLayout, MemberLayout, CoachLayout và AdminLayout.
+TierBadge, EntitlementGate và UpgradePreview.
+VideoCard, VideoFilters, VideoPlayer và ProgressIndicator.
+VodCreditCard, VodSubmissionForm, VodStatusTimeline và CoachFeedback.
+CoachingCard, BookingForm và SessionSummary.
+9. Accessibility và UX
+Semantic HTML, focus visible và label đầy đủ.
+Modal giữ focus đúng cách.
+Màu tier không phải tín hiệu duy nhất; luôn có text hoặc icon.
+Hỗ trợ prefers-reduced-motion cho hiệu ứng tier.
+Skeleton chỉ dùng khi giúp hiểu bố cục; lỗi và empty state phải có hành động tiếp theo.
+10. Frontend tests
+Unit test cho entitlement mapping và form validation.
+Component test cho locked content và dashboard module.
+E2E cho đăng ký, checkout mock, xem video, gửi VOD và đặt coaching.
+Test riêng bốn tài khoản demo đại diện cho bốn tier.
+
+04. Backend NestJS
+Backend NestJS
+Module, tầng ứng dụng, transaction và tác vụ nền
+1. Stack đề xuất
+NestJS và TypeScript.
+REST API với OpenAPI/Swagger.
+Prisma ORM và Prisma Migrate.
+PostgreSQL.
+Redis và BullMQ khi bật background processing.
+ValidationPipe cùng DTO validation.
+Structured logging và request ID.
+2. Module nghiệp vụ
+AuthModule.
+UsersModule.
+MembershipModule.
+EntitlementsModule.
+SubscriptionsModule.
+PaymentsModule.
+VideosModule.
+VodReviewsModule.
+CoachesModule.
+CoachingModule.
+AcademyModule.
+NotificationsModule.
+IntegrationsModule.
+AdminModule.
+3. Cấu trúc mỗi module
+Controller nhận HTTP request và map DTO.
+Application service điều phối use case.
+Domain service chứa quy tắc nghiệp vụ thuần.
+Repository hoặc Prisma data access.
+Adapter giao tiếp hệ thống ngoài.
+Policy hoặc guard kiểm tra role, entitlement và ownership.
+4. Quy tắc dependency
+Controller không gọi Prisma trực tiếp.
+Module không truy cập repository nội bộ của module khác.
+Giao tiếp liên module qua exported application service hoặc domain event.
+IntegrationsModule cung cấp interface; implementation theo provider được inject bằng token.
+5. Transaction boundaries
+Thanh toán thành công, kích hoạt subscription và tạo benefit allocation.
+Tạo VOD request và reserve benefit usage.
+Coach nhận request và chuyển usage sang consumed.
+Hủy request hợp lệ và release usage.
+Đặt coaching session và reserve coaching credit.
+Các thao tác này sử dụng PostgreSQL transaction với row-level locking khi cạnh tranh có thể xảy ra.
+6. Concurrency
+Khóa allocation khi kiểm tra và giữ lượt.
+Unique constraint ngăn tạo hai allocation cho cùng chu kỳ.
+Idempotency key ngăn submit hoặc webhook trùng.
+Optimistic concurrency có thể dùng updated_at hoặc version cho màn hình admin.
+7. Background jobs
+Kiểm tra quyền truy cập Google Drive.
+Gửi email xác minh và reset mật khẩu.
+Gửi thông báo VOD hoàn thành.
+Retry webhook follow-up.
+Cấp allocation khi bắt đầu chu kỳ mới.
+Dọn auth session và token hết hạn.
+8. Error handling
+Domain error được map sang HTTP status ổn định.
+Response lỗi có code, message, fieldErrors và requestId.
+Không trả stack trace hoặc provider response nhạy cảm cho client.
+Lỗi external provider được phân biệt retryable và non-retryable.
+9. Logging và audit
+Log JSON có timestamp, level, requestId, userId nếu đã xác thực và route.
+Mask token, email khi cần, Drive URL và payment payload.
+Audit event cho thay đổi tier, hoàn lượt, phân công coach và thao tác admin.
+Không dùng log như nguồn dữ liệu nghiệp vụ.
+10. Health endpoints
+Liveness chỉ xác nhận process hoạt động.
+Readiness kiểm tra PostgreSQL và dependency bắt buộc.
+Dependency tùy chọn như email không làm liveness thất bại.
+11. Versioning
+REST prefix /api/v1.
+Breaking change tạo version mới hoặc có migration window.
+OpenAPI document được sinh từ source và kiểm tra trong CI.
+
+05. PostgreSQL & 3NF
+PostgreSQL và chuẩn hóa 3NF
+Schema, constraint, index và migration
+1. Quy tắc dữ liệu
+users chứa cả thông tin đăng nhập và hồ sơ cơ bản.
+Mỗi user có một role.
+Không lưu current_plan_id trong users.
+Không lưu remaining_credit hoặc progress_percent.
+Không lưu user_id trong payments hoặc benefit_allocations nếu có thể suy ra qua subscription.
+Dữ liệu lịch sử như rank tại thời điểm gửi VOD được lưu dưới dạng snapshot hợp lệ.
+2. Identity và auth
+users.
+auth_sessions.
+email_verification_tokens.
+password_reset_tokens.
+riot_regions.
+tft_ranks.
+3. Membership
+membership_plans với parent_plan_id tự tham chiếu.
+membership_prices tách giá khỏi plan.
+entitlements.
+plan_entitlements chỉ lưu quyền lợi thêm trực tiếp tại tier.
+subscriptions tham chiếu membership_price_id.
+4. Payment
+payment_providers.
+payment_customers theo cặp user và provider.
+payments tham chiếu subscription.
+payment_webhook_events lưu provider_event_id duy nhất để idempotent.
+5. Benefit ledger
+benefit_allocations cấp quantity cho một entitlement trong một chu kỳ.
+benefit_usages ghi reserved, consumed hoặc released.
+Số lượt còn lại được tính từ allocation trừ usage chưa release.
+Một usage chỉ được liên kết với một VOD request hoặc coaching session.
+6. Content
+videos.
+video_sources.
+tags và video_tags.
+video_entitlement_requirements.
+video_access_grants.
+video_progress.
+video_favorites.
+7. VOD Review
+vod_review_requests.
+vod_sources.
+vod_review_results.
+Review result tham chiếu một video private.
+Chủ sở hữu nhận explicit video access grant.
+8. Coach và coaching
+coaches là extension của user qua user_id duy nhất.
+coach_achievements.
+social_platforms và coach_social_links.
+coach_availability.
+coaching_sessions.
+9. Academy
+academy_programs.
+academy_enrollments.
+training_plans.
+training_tasks.
+PoC có thể chỉ triển khai academy_programs và academy_enrollments; các bảng kế hoạch chi tiết được thêm khi cần.
+10. Constraint bắt buộc
+Email, plan code, entitlement code và slug video duy nhất.
+Không cho membership plan trỏ tới chính nó; application service kiểm tra toàn bộ vòng lặp.
+Một allocation duy nhất theo subscription, entitlement và period_start.
+Một benefit_usage_id duy nhất trên VOD request hoặc coaching session.
+Một VOD request có tối đa một official result.
+Foreign key có hành vi delete rõ ràng; ưu tiên restrict với dữ liệu tài chính và nghiệp vụ.
+11. Index
+users trên lower(email).
+subscriptions trên user_id, status và current_period_end.
+videos trên status, published_at, video_type và coach_id.
+video_tags trên tag_id và video_id.
+vod_review_requests trên user_id, status, assigned_coach_id và created_at.
+benefit_allocations trên subscription_id, entitlement_id và period range.
+coaching_sessions trên user_id, coach_id, status và scheduled_start.
+12. Dữ liệu nhạy cảm
+password_hash dùng thuật toán băm mật khẩu chuyên dụng.
+Refresh token hoặc opaque session secret chỉ lưu bản băm.
+source_url_encrypted và playback_url_encrypted mã hóa ở tầng ứng dụng.
+Encryption key nằm ngoài database.
+13. Migration
+Expand trước, migrate dữ liệu sau, contract cuối cùng cho thay đổi không tương thích.
+Không drop column trong cùng release với lần đầu ngừng sử dụng.
+Migration có kiểm tra trên bản sao dữ liệu staging.
+Backup và restore test trước thay đổi schema rủi ro.
+
+06. API Contract
+API Contract
+REST endpoints, request conventions và error model
+1. Quy ước chung
+Base path: /api/v1.
+JSON request và response.
+Timestamp theo ISO 8601 UTC.
+ID sử dụng UUID.
+List endpoint hỗ trợ limit, cursor và bộ lọc phù hợp.
+Mutation có rủi ro gửi lặp nhận Idempotency-Key.
+OpenAPI là tài liệu contract chính thức.
+2. Response lỗi
+Error envelope gồm code, message, fieldErrors nếu có, requestId và details đã được lọc an toàn.
+VALIDATION_ERROR cho dữ liệu đầu vào.
+AUTHENTICATION_REQUIRED cho phiên không hợp lệ.
+FORBIDDEN_ROLE, MISSING_ENTITLEMENT hoặc RESOURCE_NOT_OWNED cho lỗi quyền.
+BENEFIT_EXHAUSTED cho hết lượt.
+DRIVE_PERMISSION_REQUIRED cho link thiếu quyền.
+CONFLICT cho thao tác trùng hoặc trạng thái không hợp lệ.
+EXTERNAL_PROVIDER_UNAVAILABLE cho lỗi có thể retry.
+3. Auth endpoints
+POST /auth/register.
+POST /auth/login.
+POST /auth/logout.
+GET /auth/session.
+POST /auth/email/verify.
+POST /auth/password/forgot.
+POST /auth/password/reset.
+4. User endpoints
+GET /users/me.
+PATCH /users/me.
+GET /users/me/subscription.
+GET /users/me/benefits.
+GET /users/me/payments.
+5. Membership endpoints
+GET /membership/plans trả plan, giá và effective entitlements.
+GET /membership/plans/:code.
+GET /membership/entitlements/current.
+POST /membership/change-plan nếu provider hỗ trợ upgrade hoặc downgrade.
+POST /membership/cancel.
+6. Coach endpoints
+GET /coaches.
+GET /coaches/:slug.
+GET /coaches/:id/availability.
+7. Video endpoints
+GET /videos với search, tag, coach, type và cursor.
+GET /videos/:id.
+POST /videos/:id/playback-descriptor.
+PUT /videos/:id/progress.
+POST /videos/:id/favorite.
+DELETE /videos/:id/favorite.
+GET /videos/mine/reviews cho bộ lọc VOD của tôi.
+8. VOD Review endpoints
+GET /vod-reviews/eligibility trả entitlement, chu kỳ và số lượt khả dụng.
+POST /vod-reviews tạo request và reserve lượt.
+GET /vod-reviews/mine.
+GET /vod-reviews/:id.
+POST /vod-reviews/:id/recheck-source.
+POST /vod-reviews/:id/cancel.
+GET /coach/vod-reviews/queue.
+POST /coach/vod-reviews/:id/assign.
+POST /coach/vod-reviews/:id/start.
+POST /coach/vod-reviews/:id/complete.
+9. Coaching endpoints
+GET /coaching/eligibility.
+POST /coaching/sessions.
+GET /coaching/sessions/mine.
+GET /coaching/sessions/:id.
+POST /coaching/sessions/:id/reschedule.
+POST /coaching/sessions/:id/cancel.
+POST /coach/coaching/sessions/:id/complete.
+10. Payment endpoints
+POST /payments/checkout-session.
+GET /payments/checkout/:id/status.
+POST /payments/webhooks/:provider; endpoint này không dùng user session mà xác minh provider signature.
+11. Admin endpoints
+CRUD plan metadata và price.
+CRUD coach profile, achievement và social link.
+CRUD video metadata, tags và entitlement requirements.
+Assign VOD request.
+Release hoặc grant benefit usage với audit reason.
+Xem payment và webhook event đã lọc dữ liệu nhạy cảm.
+12. Pagination và filtering
+Cursor dựa trên cặp sort value và id để ổn định.
+Limit có giá trị mặc định và giới hạn tối đa.
+Filter được whitelist; không nhận tên column tùy ý.
+Sort chỉ cho phép các trường được định nghĩa trong contract.
+
+07. Auth & Phân quyền
+Authentication và phân quyền
+Session, role, entitlement và ownership
+1. Chiến lược authentication
+Khuyến nghị dùng opaque session cho web-first application. Server tạo session ID ngẫu nhiên, lưu bản băm trong auth_sessions và gửi cookie HttpOnly, Secure, SameSite phù hợp. Cách này đơn giản hóa thu hồi phiên và tránh lưu access token trong localStorage.
+2. Auth session
+Cookie chỉ chứa opaque identifier.
+Database lưu user_id, token_hash, expires_at, revoked_at, user_agent summary và created_at.
+Rotate session sau login và thay đổi mật khẩu.
+Logout thu hồi session hiện tại.
+Admin có thể thu hồi toàn bộ session của một user.
+3. Password
+Băm bằng Argon2id hoặc thuật toán chuyên dụng tương đương.
+Không log password hoặc reset token.
+Reset token dùng một lần, có hạn và chỉ lưu bản băm.
+Email verification token dùng một lần và có hạn.
+Rate limit login, register, forgot password và verify.
+4. CSRF và CORS
+Cookie auth yêu cầu CSRF protection cho mutation.
+Có thể dùng SameSite=Lax kết hợp CSRF token.
+CORS chỉ cho phép origin được cấu hình.
+Không dùng wildcard origin cùng credentials.
+5. Mô hình authorization
+Role
+users.role có một giá trị: member, coach hoặc admin. Role quyết định khu vực vận hành tổng quát.
+Entitlement
+Effective entitlements được tính từ subscription active, plan hiện tại, quyền lợi trực tiếp và chuỗi plan cha.
+Ownership
+Personal VOD và hồ sơ tài khoản còn yêu cầu ownership hoặc explicit access grant; có entitlement không đồng nghĩa được xem VOD của người khác.
+6. Guards và policies
+SessionAuthGuard xác thực session.
+RoleGuard kiểm tra member, coach hoặc admin.
+EntitlementGuard kiểm tra quyền lợi chức năng.
+ResourcePolicy kiểm tra ownership hoặc access grant.
+BenefitPolicy kiểm tra allocation còn hiệu lực và đủ quantity.
+7. Quy tắc truy cập chính
+Khách chưa đăng nhập chỉ xem nội dung public.
+VIDEO_LIBRARY cho phép xem video membership đáp ứng requirement.
+MONTHLY_VOD_REVIEW cho phép tạo request mới khi còn allocation.
+MONTHLY_1ON1_COACHING cho phép đặt session khi còn allocation.
+ACADEMY_ACCESS yêu cầu thêm academy enrollment active.
+Coach chỉ xem request được phân công hoặc hàng đợi được policy cho phép.
+Admin có quyền vận hành nhưng mọi thao tác nhạy cảm phải ghi audit event.
+8. Downgrade và hết hạn
+Không cho gửi VOD hoặc đặt coaching mới sau khi entitlement hết hiệu lực.
+Personal review đã hoàn thành tiếp tục truy cập bằng video access grant, trừ khi chính sách pháp lý yêu cầu thu hồi.
+Session đã đặt được xử lý theo chính sách kinh doanh, không xóa tự động.
+Frontend ẩn module không còn entitlement nhưng backend vẫn kiểm tra độc lập.
+9. Security headers
+Content-Security-Policy.
+Strict-Transport-Security ở production.
+X-Content-Type-Options.
+Referrer-Policy hạn chế rò rỉ URL.
+Frame policy phù hợp nếu video provider yêu cầu embed.
+10. Threats cần test
+IDOR trên Personal VOD, payment và coaching session.
+Session fixation và session replay.
+CSRF trên cancel subscription hoặc submit VOD.
+Brute force đăng nhập và reset password.
+Drive URL injection hoặc URL không thuộc Google Drive.
+Webhook giả mạo.
+Race condition sử dụng một credit hai lần.
+
+08. VOD, Drive & Media
+VOD, Google Drive và media
+Luồng nguồn video, kiểm tra quyền và phát nội dung riêng tư
+1. Phân biệt hai loại media
+Source VOD: video trận đấu do học viên cung cấp qua Google Drive để coach phân tích.
+Result video: video phản hồi do coach tạo và được đưa vào thư viện VOD của tôi.
+Hai nguồn có lifecycle, quyền truy cập và retention khác nhau.
+2. Submit flow
+Client gửi Drive URL cùng title, rank và requested focus.
+Backend kiểm tra entitlement và reserve credit trong transaction.
+Backend normalize URL và trích xuất external_file_id.
+vod_review_request và vod_source được tạo.
+Job kiểm tra quyền Drive được enqueue.
+Request chuyển sang queued hoặc needs_permission.
+3. Chuẩn hóa Google Drive URL
+Chỉ chấp nhận host và định dạng Google Drive đã whitelist.
+Không fetch URL tùy ý từ server để tránh SSRF.
+Trích file ID từ các dạng URL được hỗ trợ.
+Lưu URL đã mã hóa và display URL đã che bớt.
+Không đưa URL nguồn vào analytics hoặc log.
+4. Mô hình cấp quyền Drive
+Ưu tiên yêu cầu học viên chia sẻ file trực tiếp cho một service account hoặc tài khoản vận hành đã công bố. Không khuyến khích Anyone with the link nếu có thể tránh.
+Adapter thực hiện metadata read để xác nhận file tồn tại và có quyền.
+Không download toàn bộ video chỉ để validate.
+Lưu access_status và last_access_checked_at.
+Recheck được rate limit và chạy idempotent.
+5. Trạng thái nguồn
+Unchecked.
+Accessible.
+Permission required.
+Not found.
+Invalid.
+Provider unavailable.
+6. Coach workflow
+Coach chỉ nhận request queued hoặc assigned theo policy.
+Khi coach bắt đầu, credit chuyển từ reserved sang consumed trong cùng transaction.
+Coach xem source qua adapter hoặc link được giải mã ở backend.
+Frontend coach không nhận secret của Google integration.
+Audit ghi nhận assign, start và complete.
+7. Tạo kết quả
+Coach nhập summary và cung cấp result media.
+Backend tạo video với type personal_vod_review và visibility private.
+Tạo vod_review_result liên kết request với video.
+Tạo video_access_grant cho học viên.
+Request chuyển completed và notification được enqueue.
+8. Playback private
+Client yêu cầu playback descriptor từ API.
+Backend kiểm tra session, ownership hoặc access grant.
+Adapter phát signed URL hoặc token có thời hạn ngắn.
+Không lưu signed URL dài hạn trong database.
+Khi token hết hạn, player yêu cầu descriptor mới.
+9. Thư viện VOD của tôi
+Query đi qua vod_review_results và vod_review_requests.user_id.
+Access check vẫn dựa trên video_access_grants.
+Cho phép filter theo coach, trạng thái, tag và chu kỳ.
+Không trả source Drive URL trong list response.
+10. Retention và quyền riêng tư
+Chính sách retention của source VOD là quyết định mở.
+Xóa mềm metadata nghiệp vụ; xóa media vật lý theo quy trình riêng.
+Yêu cầu xóa dữ liệu phải ghi audit và không làm mất record tài chính bắt buộc.
+Coach không được chia sẻ Personal VOD ra ngoài hệ thống.
+11. PoC mode
+Drive validation có thể dùng mock state accessible hoặc permission_required.
+Result video dùng nội dung demo.
+Playback descriptor có thể trả URL demo không nhạy cảm.
+Data model và authorization phải giống thiết kế production.
+
+09. Thanh toán & Tác vụ nền
+Thanh toán và tác vụ nền
+Provider adapter, webhook, benefit lifecycle và notification
+1. Payment adapter
+createCheckoutSession.
+getCheckoutStatus.
+cancelSubscription.
+changeSubscription.
+verifyWebhookSignature.
+parseWebhookEvent.
+Business module chỉ phụ thuộc interface, không gọi SDK provider trực tiếp ngoài adapter.
+2. Checkout flow
+Client gửi membership_price_id.
+Backend xác nhận price active và user hợp lệ.
+Tạo checkout session qua adapter.
+Lưu reference nội bộ và external checkout ID.
+Client redirect hoặc mở hosted checkout.
+Trang success chỉ hiển thị trạng thái; webhook mới là nguồn xác nhận thanh toán.
+3. Webhook flow
+Đọc raw body theo yêu cầu provider.
+Xác minh signature trước khi parse nghiệp vụ.
+Insert payment_webhook_event bằng provider_event_id duy nhất.
+Nếu event đã tồn tại, trả thành công mà không xử lý lại.
+Xử lý payment, subscription và allocation trong transaction.
+Đánh dấu processed hoặc failed cùng retry metadata.
+4. Subscription lifecycle
+Pending khi checkout chưa xác nhận.
+Active sau event thành công.
+Past due khi gia hạn thất bại.
+Cancelled khi không còn gia hạn.
+Expired khi current period kết thúc và không còn quyền.
+Plan change có effective time rõ ràng.
+5. Cấp benefit allocation
+Khi subscription active hoặc bắt đầu chu kỳ mới, resolve effective entitlements.
+Tạo allocation cho entitlement có unit_type credits.
+Unique constraint bảo đảm không cấp hai lần.
+Entitlement unlimited không cần allocation.
+Revocation chỉ dùng khi có nghiệp vụ rõ và phải audit.
+6. Tác vụ nền
+Drive access validation.
+Email verification và password reset.
+Payment follow-up và webhook retry.
+Benefit cycle allocation.
+Notification VOD hoàn thành.
+Reminder coaching.
+Cleanup session và token hết hạn.
+7. Queue semantics
+Job có deterministic job ID khi có thể.
+Handler idempotent.
+Retry theo exponential backoff cho lỗi tạm thời.
+Không retry vô hạn lỗi validation hoặc permission.
+Dead-letter hoặc failed jobs được quan sát và xử lý.
+8. Outbox pattern
+Khi nghiệp vụ database cần phát event đáng tin cậy, transaction ghi outbox_event cùng thay đổi nghiệp vụ. Worker đọc outbox và gửi notification hoặc job ngoài transaction. Điều này tránh trường hợp database đã commit nhưng message bị mất.
+9. Notification
+In-app notification là nguồn hiển thị chính.
+Email là kênh bổ sung.
+Template tách khỏi business service.
+User có preferences cho marketing và transactional notification.
+Transactional notification cần thiết không bị tắt bởi marketing preference.
+10. PoC payment
+Mock provider hỗ trợ success, failed và cancelled.
+Webhook simulator dùng secret riêng và event ID duy nhất.
+Không nhập hoặc lưu dữ liệu thẻ thật.
+Contract giống provider production để thay adapter mà không đổi business flow.
+11. Failure handling
+Provider timeout không tự suy ra thanh toán thất bại.
+Trang client poll checkout status có giới hạn.
+Reconciliation job đối chiếu transaction bị treo.
+Admin có công cụ xem trạng thái nhưng không sửa trực tiếp payment record.
+Thao tác hoàn quyền lợi yêu cầu lý do và audit.
+
+10. Triển khai & Chất lượng
+Triển khai, quan sát và chất lượng
+Hạ tầng, CI/CD, testing và vận hành
+1. Topology triển khai
+Frontend deploy dưới dạng static assets sau CDN.
+NestJS API chạy container stateless.
+Worker chạy container riêng khi bật queue.
+Managed PostgreSQL.
+Managed Redis nếu dùng BullMQ.
+Object storage hoặc media provider cho asset và video result.
+2. Network
+Chỉ frontend public và API ingress được public.
+PostgreSQL và Redis nằm trong private network.
+TLS bắt buộc.
+API và worker dùng database credential riêng nếu nền tảng cho phép.
+Admin routes có rate limit và policy bổ sung.
+3. CI/CD
+Lint, typecheck, unit test và build.
+Integration test với PostgreSQL.
+Build container và scan dependency.
+Deploy staging.
+Run migration bằng job một lần.
+Smoke test auth, health và critical read endpoints.
+Promote artifact đã kiểm tra sang production.
+4. Migration khi deploy
+Readiness không bật cho version mới trước khi migration tương thích hoàn tất.
+Dùng expand-and-contract cho thay đổi lớn.
+Migration và application release có kế hoạch rollback riêng.
+Không rollback database bằng cách chạy ngược migration phá dữ liệu khi chưa kiểm chứng.
+5. Observability
+Structured logs với requestId và correlationId.
+Error tracking cho frontend và backend.
+Metrics: request rate, error rate, latency, DB pool, queue depth và job failures.
+Business metrics: checkout success, active subscription, VOD submit, completion time và exhausted credits.
+Alert tập trung vào ảnh hưởng người dùng, không chỉ CPU.
+6. Health và SLO đề xuất
+API readiness phản ánh PostgreSQL và dependency bắt buộc.
+Read endpoint p95 mục tiêu dưới 500 ms trong tải PoC.
+Không mất webhook đã được provider retry.
+Không cho phép tiêu thụ một credit hai lần.
+Personal VOD access denial phải nhất quán ở mọi endpoint.
+7. Backup và recovery
+Backup PostgreSQL tự động.
+Point-in-time recovery nếu nhà cung cấp hỗ trợ.
+Restore test định kỳ trên môi trường tách biệt.
+Media backup hoặc retention theo khả năng provider.
+Encryption key có backup an toàn và rotation plan.
+8. Test pyramid
+Unit
+Entitlement inheritance.
+Benefit remaining calculation.
+State transition của VOD và subscription.
+Drive URL parser.
+Integration
+Prisma repositories với PostgreSQL.
+Transaction reserve và consume credit.
+Webhook idempotency.
+Video ownership và access grant.
+End-to-end
+Đăng ký và đăng nhập.
+Checkout mock và dashboard theo tier.
+Xem video membership.
+Gửi VOD accessible và permission_required.
+Coach complete review và user thấy VOD của tôi.
+Đặt coaching bằng credit.
+9. Security testing
+Dependency và container scanning.
+Secret scanning.
+Authorization tests cho IDOR.
+CSRF, CORS và cookie configuration.
+Rate-limit tests.
+Webhook signature tests.
+10. Performance testing
+Danh sách video với dữ liệu lớn và filter phổ biến.
+Concurrent submit dùng cùng một benefit allocation.
+Webhook burst.
+Dashboard aggregation.
+Queue retry khi provider gián đoạn.
+11. Trình tự triển khai PoC
+Khởi tạo monorepo, database và auth.
+Seed plans, entitlements, coaches và videos.
+Landing, membership và tier-aware dashboard.
+Video library, access và progress.
+VOD Review flow và My VODs.
+Coaching flow.
+Checkout mock và account pages.
+E2E, observability và staging demo.
+12. Definition of Done
+PRD acceptance criteria được map sang test case.
+OpenAPI được sinh và review.
+Migrations chạy sạch trên database mới.
+Không có secret hoặc PII thật trong demo data.
+Bốn tài khoản demo thể hiện đúng bốn tier.
+Critical flows có E2E test.
+Runbook cho deploy, rollback và xử lý failed jobs được ghi nhận.
+

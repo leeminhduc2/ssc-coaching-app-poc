@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, FormEvent } from "react";
 import { AdminContent } from "./admin-content";
+import { AdminUsers } from "./admin-users";
 import {
   Link,
   useParams,
@@ -60,7 +61,8 @@ export function LibraryPage() {
     const t = setTimeout(() => {
       if (search !== (params.get("search") || "")) {
         const p = new URLSearchParams(params);
-        if (search) p.set("search", search); else p.delete("search");
+        if (search) p.set("search", search);
+        else p.delete("search");
         p.delete("page");
         setParams(p, { replace: true });
       }
@@ -77,7 +79,8 @@ export function LibraryPage() {
     });
   function filter(k: string, v: string) {
     const p = new URLSearchParams(params);
-    if (v) p.set(k, v); else p.delete(k);
+    if (v) p.set(k, v);
+    else p.delete(k);
     if (k !== "page") p.delete("page");
     setParams(p);
   }
@@ -1466,6 +1469,7 @@ export function Admin() {
       <div className="tabs">
         {[
           ["overview", "Tổng quan"],
+          ["users", "Tài khoản"],
           ["plans", "Gói & giá"],
           ["content", "Nội dung & coach"],
           ["academy", "Duyệt Academy"],
@@ -1482,6 +1486,7 @@ export function Admin() {
         ))}
       </div>
       <ErrorBox error={error || q.error} />
+      {tab === "users" && <AdminUsers />}
       {tab === "content" && <AdminContent />}
       {q.isLoading ? (
         <Loading />
@@ -1740,6 +1745,11 @@ export function Admin() {
                           "create-video": "Tạo bài học",
                           "edit-video": "Sửa bài học",
                           "edit-coach": "Sửa hồ sơ coach",
+                          "create-user": "Tạo tài khoản",
+                          "edit-user": "Sửa tài khoản",
+                          "disable-user": "Vô hiệu hóa tài khoản",
+                          "reset-user-password": "Đặt lại mật khẩu",
+                          "edit-own-coach-profile": "Coach sửa hồ sơ",
                           cancel: "Hủy yêu cầu",
                         }[a.action as string] || a.action}
                       </td>

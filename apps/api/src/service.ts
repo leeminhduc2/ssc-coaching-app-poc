@@ -21,7 +21,15 @@ export const fail = (
 ): never => {
   throw new HttpException({ message, code }, status);
 };
-type Tx = Prisma.TransactionClient;
+export type Tx = Prisma.TransactionClient;
+export type CoachProfilePatch = {
+  displayName?: string;
+  headline?: string;
+  bio?: string;
+  specialty?: string;
+  achievement?: string;
+  image?: string;
+};
 @Injectable()
 export class AppService {
   db = new PrismaClient();
@@ -31,7 +39,9 @@ export class AppService {
       where: { tokenHash: hash(token) },
       include: { user: true },
     });
-    return s && s.expiresAt > new Date() ? s.user : null;
+    return s && s.expiresAt > new Date() && s.user.status === "active"
+      ? s.user
+      : null;
   }
   safe(u: User) {
     return {
@@ -43,17 +53,21 @@ export class AppService {
       rank: u.rank,
       timezone: u.timezone,
       verified: u.verified,
+      status: u.status,
+      disabledAt: u.disabledAt,
     };
   }
   async login(email: string, password: string) {
     const u = await this.db.user.findUnique({
       where: { email: email.toLowerCase() },
     });
-    if (!u || !compareSync(password, u.passwordHash))
+    if (!u || u.status !== "active" || !compareSync(password, u.passwordHash))
       fail("Email hoặc mật khẩu chưa đúng.", 401, "INVALID_CREDENTIALS");
     return this.newSession(u!);
   }
   async newSession(u: User) {
+    if (u.status !== "active")
+      fail("Email hoặc mật khẩu chưa đúng.", 401, "INVALID_CREDENTIALS");
     const token = randomBytes(32).toString("hex");
     await this.db.authSession.create({
       data: {
@@ -77,6 +91,51 @@ export class AppService {
       },
     });
     return this.newSession(u);
+  }
+  async updateCoachProfile(tx: Tx, coachId: string, patch: CoachProfilePatch) {
+    const coach = await tx.coach.findUnique({ where: { id: coachId } });
+    if (!coach) fail("Không tìm thấy coach.", 404, "COACH_NOT_FOUND");
+    await tx.coach.update({
+      where: { id: coachId },
+      data: {
+        ...(patch.headline !== undefined ? { headline: patch.headline } : {}),
+        ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
+        ...(patch.specialty !== undefined
+          ? { specialty: patch.specialty }
+          : {}),
+        ...(patch.image !== undefined ? { image: patch.image } : {}),
+        ...(patch.displayName !== undefined
+          ? { user: { update: { displayName: patch.displayName } } }
+          : {}),
+      },
+    });
+    if (patch.achievement !== undefined) {
+      const featured = await tx.achievement.findFirst({
+        where: { coachId },
+        orderBy: [{ displayOrder: "asc" }, { id: "asc" }],
+      });
+      if (featured)
+        await tx.achievement.update({
+          where: { id: featured.id },
+          data: { title: patch.achievement },
+        });
+      else
+        await tx.achievement.create({
+          data: {
+            coachId,
+            title: patch.achievement,
+            description: "Thành tích nổi bật do coach cập nhật.",
+            displayOrder: 0,
+          },
+        });
+    }
+    return tx.coach.findUniqueOrThrow({
+      where: { id: coachId },
+      include: {
+        user: { select: { displayName: true } },
+        achievements: { orderBy: [{ displayOrder: "asc" }, { id: "asc" }] },
+      },
+    });
   }
   async plans(tx: Tx = this.db) {
     const plans = await tx.plan.findMany({
@@ -354,7 +413,12 @@ export class AppService {
     return this.transaction(u.id, key, "review", async (tx) => {
       if (
         b.coachId &&
-        !(await tx.coach.findUnique({ where: { id: b.coachId } }))
+        !(await tx.coach.findFirst({
+          where: {
+            id: b.coachId,
+            user: { role: "coach", status: "active" },
+          },
+        }))
       )
         fail("Coach không hợp lệ.");
       const usage = await this.reserve(tx, u, VOD);
@@ -459,7 +523,12 @@ export class AppService {
             : b.coachId;
         if (
           !coachId ||
-          !(await tx.coach.findUnique({ where: { id: coachId } }))
+          !(await tx.coach.findFirst({
+            where: {
+              id: coachId,
+              user: { role: "coach", status: "active" },
+            },
+          }))
         )
           fail("Vui lòng chọn coach.");
         if (u.role === "coach" && r!.coachId && r!.coach?.userId !== u.id)
@@ -575,7 +644,14 @@ export class AppService {
         })
       )
         fail("Khung giờ vừa được đặt. Vui lòng chọn giờ khác.", 409);
-      if (!(await tx.coach.findUnique({ where: { id: b.coachId } })))
+      if (
+        !(await tx.coach.findFirst({
+          where: {
+            id: b.coachId,
+            user: { role: "coach", status: "active" },
+          },
+        }))
+      )
         fail("Không tìm thấy coach.");
       const usage = await this.reserve(tx, u, COACHING);
       return tx.booking.create({

@@ -156,10 +156,12 @@ async function main() {
               title: "Thách Đấu · 1.200 LP",
               description:
                 "Thành tích minh họa, không đại diện người chơi thật.",
+              displayOrder: 0,
             },
             {
               title: "4 mùa đồng hành",
               description: "Hồ sơ coach mẫu của SSC Academy.",
+              displayOrder: 1,
             },
           ],
         },

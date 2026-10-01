@@ -296,7 +296,12 @@ ul {
 .mobile-menu {
   display: none;
 }
-.sidebar-close {display:none;position:absolute;right:12px;top:22px;}
+.sidebar-close {
+  display: none;
+  position: absolute;
+  right: 12px;
+  top: 22px;
+}
 .landing-hero {
   position: relative;
   min-height: 600px;
@@ -805,8 +810,8 @@ td svg {
 }
 .coach-portrait {
   width: 100%;
-  height: 260px;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   object-position: 50% 30%;
 }
 .coach-card > div {
@@ -844,8 +849,8 @@ td svg {
 }
 .coach-detail > img {
   width: 100%;
-  height: 350px;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   border-radius: 16px;
 }
 .coach-detail h1 {
@@ -3064,9 +3069,6 @@ label small {
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  .coach-detail > img {
-    height: 280px;
-  }
   .coach-detail h1 {
     font-size: 35px;
   }
@@ -3104,15 +3106,17 @@ label small {
   }
   .sidebar {
     transform: translateX(-100%);
-    visibility:hidden;
+    visibility: hidden;
     transition: transform 0.2s;
     width: 238px;
   }
   .sidebar.open {
     transform: translateX(0);
-    visibility:visible;
+    visibility: visible;
   }
-  .sidebar-close {display:grid;}
+  .sidebar-close {
+    display: grid;
+  }
   .sidebar-scrim {
     position: fixed;
     inset: 0;
@@ -3369,12 +3373,6 @@ label small {
   }
   .coach-card > div {
     padding: 24px;
-  }
-  .coach-portrait {
-    height: 220px;
-  }
-  .coach-detail > img {
-    height: 220px;
   }
   .auth-panel h1 {
     font-size: 23px;
@@ -3825,6 +3823,189 @@ label small {
   }
   .prose p {
     font-size: 13px;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.admin-user-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 170px 180px auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.admin-user-toolbar label {
+  margin: 0;
+}
+.admin-user-toolbar .button {
+  white-space: nowrap;
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding-left: 13px;
+  color: var(--muted);
+  background: #0e141b;
+  border: 1px solid #34404d;
+  border-radius: 7px;
+}
+.search-field:focus-within {
+  border-color: var(--mint);
+}
+.search-field input {
+  min-height: 42px;
+  margin: 0;
+  padding-left: 0;
+  border: 0;
+  background: transparent;
+}
+.admin-user-editor {
+  margin-bottom: 28px;
+  scroll-margin-top: 90px;
+}
+.admin-user-editor > .panel {
+  border-color: #3d564e;
+}
+.admin-user-list td:first-child strong,
+.admin-user-list td:first-child small {
+  display: block;
+}
+.admin-user-list td:first-child small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+.role-pill {
+  display: inline-flex;
+  padding: 5px 9px;
+  border: 1px solid #455568;
+  border-radius: 5px;
+  color: #bbccdf;
+  background: #25344633;
+}
+.role-coach {
+  color: #d7bcf2;
+  border-color: #59436b;
+  background: #4d315833;
+}
+.role-admin {
+  color: var(--gold);
+  border-color: #665631;
+  background: #58451f33;
+}
+.row-actions,
+.inline-confirm {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.row-actions .text-button {
+  white-space: nowrap;
+}
+.danger-text,
+.field-error {
+  color: #f0a8b0;
+}
+.password-reset {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.coach-fields h3 {
+  margin-bottom: 18px;
+}
+.image-input {
+  margin: 20px 0;
+}
+.image-preview {
+  width: min(100%, 360px);
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--muted);
+  background: #0b1016;
+  border: 1px dashed #42505e;
+  border-radius: 10px;
+}
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-input label {
+  margin-bottom: 0;
+}
+.field-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.coach-profile-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.3fr);
+  gap: 24px;
+  align-items: start;
+}
+.coach-profile-image-panel {
+  position: sticky;
+  top: 88px;
+}
+.coach-profile-image-panel .image-preview {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+.coach-profile-image-panel > p {
+  margin-bottom: 0;
+}
+.coach-profile-form .button {
+  margin-top: 8px;
+}
+.status-disabled {
+  color: #edacb4;
+  border-color: #603644;
+  background: #50273233;
+}
+@media (max-width: 800px) {
+  .admin-user-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-user-toolbar .search-field,
+  .admin-user-toolbar .button {
+    grid-column: 1 / -1;
+  }
+  .admin-user-toolbar .button {
+    width: 100%;
+  }
+  .coach-profile-layout {
+    grid-template-columns: 1fr;
+  }
+  .coach-profile-image-panel {
+    position: static;
+  }
+  .coach-profile-image-panel .image-preview {
+    max-height: 420px;
+  }
+}
+@media (max-width: 520px) {
+  .admin-user-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .admin-user-toolbar .search-field,
+  .admin-user-toolbar .button {
+    grid-column: auto;
+  }
+  .row-actions {
+    gap: 10px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

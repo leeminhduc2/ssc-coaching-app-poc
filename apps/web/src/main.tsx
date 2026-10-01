@@ -45,6 +45,7 @@ import {
   LogOut,
   ShieldCheck,
   Users,
+  ContactRound,
   Play,
   Check,
   Target,
@@ -76,6 +77,7 @@ import {
   Operations,
   Admin,
 } from "./member-pages";
+import { CoachProfile } from "./coach-profile";
 import "./styles.css";
 const client = new QueryClient({
   defaultOptions: {
@@ -363,13 +365,18 @@ function MemberLayout() {
   useEffect(() => setOpen(false), [loc.pathname, s?.user?.id]);
   useEffect(() => {
     if (!open) return;
-    const close = (event: KeyboardEvent) => {if(event.key==='Escape')setOpen(false)};
-    const previous=document.body.style.overflow;
-    document.body.style.overflow='hidden';
-    document.addEventListener('keydown',close);
-    document.querySelector<HTMLButtonElement>('.sidebar-close')?.focus();
-    return ()=>{document.body.style.overflow=previous;document.removeEventListener('keydown',close)};
-  },[open]);
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", close);
+    document.querySelector<HTMLButtonElement>(".sidebar-close")?.focus();
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
   if (sessionLoading) return <Loading />;
   if (sessionError) return <ErrorBox error={sessionError} />;
   if (!s?.user)
@@ -423,7 +430,13 @@ function MemberLayout() {
         />
       )}
       <aside className={`sidebar ${open ? "open" : ""}`}>
-        <button className="icon-button sidebar-close" aria-label="Đóng menu học tập" onClick={()=>setOpen(false)}><X size={19}/></button>
+        <button
+          className="icon-button sidebar-close"
+          aria-label="Đóng menu học tập"
+          onClick={() => setOpen(false)}
+        >
+          <X size={19} />
+        </button>
         <Brand />
         <div className="workspace-label">KHÔNG GIAN HỌC TẬP</div>
         <nav>
@@ -438,6 +451,12 @@ function MemberLayout() {
             <>
               <div className="nav-caption">VẬN HÀNH</div>
               {navItem(["/app/coach", "Hàng đợi coaching", Users])}
+              {s.user.role === "coach" &&
+                navItem([
+                  "/app/coach/profile",
+                  "Hồ sơ công khai",
+                  ContactRound,
+                ])}
               {s.user.role === "admin" &&
                 navItem(["/app/admin", "Quản trị", ShieldCheck])}
             </>
@@ -493,6 +512,7 @@ function MemberLayout() {
                 ...personal,
                 ["/app/account", "Tài khoản"],
                 ["/app/coach", "Hàng đợi coaching"],
+                ["/app/coach/profile", "Hồ sơ công khai"],
                 ["/app/admin", "Quản trị"],
               ].find((x) => x[0] === loc.pathname)?.[1] as string) || "Bài học"}
             </span>
@@ -1122,6 +1142,7 @@ function App() {
               <Route path="academy" element={<Academy />} />
               <Route path="account" element={<Account />} />
               <Route path="coach" element={<Operations />} />
+              <Route path="coach/profile" element={<CoachProfile />} />
               <Route path="admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Route>

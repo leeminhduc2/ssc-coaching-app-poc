@@ -22,6 +22,7 @@ import {
   HttpException,
 } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import {
   SwaggerModule,
   DocumentBuilder,
@@ -36,7 +37,7 @@ import { hashSync } from "bcryptjs";
 import { z, ZodError } from "zod";
 import { AppService, fail } from "./service";
 import { hash, ACADEMY } from "./domain";
-import {describeBodies} from './openapi';
+import { describeBodies } from "./openapi";
 const auth = z.object({
     email: z.string().email().max(200),
     password: z.string().min(8).max(100),
@@ -66,6 +67,14 @@ class Errors implements ExceptionFilter {
         focus: "Chủ đề",
         amount: "Giá",
         reason: "Lý do",
+        role: "Vai trò",
+        status: "Trạng thái",
+        slug: "Slug coach",
+        headline: "Tiêu đề hồ sơ",
+        bio: "Giới thiệu coach",
+        specialty: "Chuyên môn",
+        achievement: "Thành tích",
+        image: "Ảnh coach",
       };
       message = e.issues
         .map(
@@ -104,6 +113,8 @@ import { CatalogModule } from "./modules/catalog";
 import { CoachingModule } from "./modules/coaching";
 import { AcademyModule } from "./modules/academy";
 import { AdminModule } from "./modules/admin";
+import { CoachProfileModule } from "./modules/coach-profile";
+import { ensureUploadRoot, uploadRoot } from "./media";
 @Module({
   imports: [
     SystemModule,
@@ -113,6 +124,7 @@ import { AdminModule } from "./modules/admin";
     CoachingModule,
     AcademyModule,
     AdminModule,
+    CoachProfileModule,
   ],
 })
 class AppModule {}
@@ -124,11 +136,20 @@ async function main() {
     !process.env.PAYMENT_WEBHOOK_SECRET
   )
     throw new Error("Thiếu cấu hình. Xem .env.example.");
-  const app = await NestFactory.create(AppModule, {
+  await ensureUploadRoot();
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
     logger: ["error", "warn", "log"],
   });
   app.use(helmet());
+  app.useStaticAssets(uploadRoot(), {
+    prefix: "/api/uploads/",
+    setHeaders: (response) =>
+      response.setHeader(
+        "Cache-Control",
+        "public, max-age=31536000, immutable",
+      ),
+  });
   app.use(cookieParser());
   app.useGlobalFilters(new Errors());
   const origins = [

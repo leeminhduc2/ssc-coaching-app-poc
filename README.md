@@ -53,10 +53,10 @@ Mật khẩu chung: `Demo@12345`. Đây là tài khoản giả, tuyệt đối k
 1. Từ trang chủ, chọn gói → đăng ký → checkout. Có ba kịch bản thành công, thất bại, hủy và mã ưu đãi mẫu `SSC10`.
 2. Chọn Cao Thủ. Tìm kiếm bài học, lọc chủ đề/coach/phiên bản/trình độ, lưu bài, phát video mẫu và đánh dấu hoàn thành. Tải lại trang để kiểm tra tiến độ.
 3. Gửi VOD bằng `https://drive.google.com/file/d/demo-file-123456/view`. Chọn “Coach chưa được cấp quyền” để thử kiểm tra lại; chọn “Không tìm thấy tệp” để thử hoàn lượt. Không cần tệp Drive thật.
-4. Chuyển Coach Hải Đăng, tiếp nhận → bắt đầu → nhập tổng kết → hoàn thành. Trở lại tài khoản học viên để thấy thông báo và video trong “VOD của tôi”.
+4. Chuyển Coach Hải Đăng, cập nhật hồ sơ/ảnh công khai, rồi tiếp nhận → bắt đầu → nhập tổng kết → hoàn thành. Trở lại tài khoản học viên để thấy thông báo và video trong “VOD của tôi”.
 5. Chọn Đại Cao Thủ, đặt coaching ở giờ còn trống. Đổi/hủy trước ít nhất 24 giờ. Coach có thể hoàn thành buổi học mẫu để học viên thấy tổng kết.
 6. Dùng tài khoản mới để ứng tuyển Academy. Chuyển admin để duyệt; quay lại tài khoản mới để xem kế hoạch tuần và đánh dấu nhiệm vụ.
-7. Admin chỉnh gói/giá, tạo và sửa bài học, sửa hồ sơ coach, hoàn lượt có lý do và xem nhật ký vận hành.
+7. Admin tạo/sửa/vô hiệu hóa/khôi phục tài khoản, reset mật khẩu, chỉnh gói/giá, quản lý nội dung, hoàn lượt có lý do và xem nhật ký vận hành.
 
 Hai VOD cá nhân được seed cho mỗi tài khoản Cao Thủ trở lên. Các tài khoản fixture riêng cung cấp trạng thái chờ quyền, chờ nhận, đã phân công, đang phân tích, đã hủy/từ chối. Có lịch đã hoàn thành và lịch sắp tới. Hồ sơ, thành tích, giá và phiên bản nội dung đều mang tính minh họa; không phải meta TFT hiện tại.
 
@@ -73,7 +73,7 @@ npm audit
 
 E2E cần API + web đang chạy và Chrome trên máy Windows. Trên CI, Playwright dùng Chromium cài bằng `npx playwright install --with-deps chromium`. Kiểm thử tạo tài khoản `@ssc.test` riêng, không xóa dữ liệu demo. Dùng database kiểm thử riêng khi đưa vào pipeline. Xem ánh xạ yêu cầu tại [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
 
-Bản kiểm tra tại máy phát triển: 14 unit + 13 integration/E2E đạt; build/lint/typecheck đạt, audit không có cảnh báo. OpenAPI đã xuất tại [docs/openapi.json](docs/openapi.json). Pipeline GitHub Actions được chuẩn bị nhưng chưa chạy từ xa.
+Bản kiểm tra tại máy phát triển: 20 unit + 17 integration/E2E đạt; build/lint/typecheck đạt, audit không có cảnh báo. OpenAPI runtime có tại `/api/docs-json`; bản tham chiếu ban đầu nằm ở [docs/openapi.json](docs/openapi.json). Pipeline GitHub Actions được chuẩn bị nhưng chưa chạy từ xa.
 
 ## Cấu trúc
 
@@ -87,6 +87,14 @@ tests/                  Unit, API integration, E2E và kiểm tra accessibility
 infra/                  PostgreSQL Docker Compose
 docs/                   Nghiệm thu, nguồn tài nguyên, vận hành, API
 ```
+
+## Ảnh hồ sơ coach trong bản demo
+
+Backend nhận ảnh JPEG, PNG hoặc WebP tối đa 5 MiB khi admin tạo/chuyển tài
+khoản coach hoặc khi coach cập nhật hồ sơ. Ảnh được lưu mặc định tại
+`.local/uploads/coaches` và phục vụ qua `/api/uploads/coaches/...`. Có thể đặt
+`UPLOAD_DIR` để đổi thư mục lưu. Đây là filesystem local cho demo; khi triển
+khai nhiều instance hoặc container không có volume cần thay bằng object storage.
 
 Backend luôn kiểm tra session, vai trò, entitlement và quyền sở hữu. Mật khẩu bcrypt, cookie HttpOnly/SameSite, session lưu hash; nguồn Drive mã hóa AES-256-GCM. Mutation yêu cầu header chống CSRF; thao tác tiêu thụ lượt có khóa chống lặp và khóa transaction PostgreSQL. Lượt được tính từ sổ sử dụng của cả chu kỳ, kể cả khi đổi gói. VOD cá nhân giữ explicit access grant sau khi hạ gói.
 

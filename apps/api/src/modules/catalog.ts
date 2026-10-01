@@ -29,18 +29,32 @@ class CatalogController extends BaseController {
   }
   @Get("coaches") coaches() {
     return this.s.db.coach.findMany({
-      include: { user: { select: { displayName: true } }, achievements: true },
+      where: { user: { role: "coach", status: "active" } },
+      include: {
+        user: { select: { displayName: true } },
+        achievements: { orderBy: [{ displayOrder: "asc" }, { id: "asc" }] },
+      },
     });
   }
   @Get("coaches/:id") async coach(@Param("id") id: string) {
     const c = await this.s.db.coach.findUnique({
-      where: { id },
-      include: { user: { select: { displayName: true } }, achievements: true },
+      where: { id, user: { role: "coach", status: "active" } },
+      include: {
+        user: { select: { displayName: true } },
+        achievements: { orderBy: [{ displayOrder: "asc" }, { id: "asc" }] },
+      },
     });
     if (!c) fail("Không tìm thấy coach.", 404);
     return c;
   }
   @Get("coaches/:id/availability") async availability(@Param("id") id: string) {
+    if (
+      !(await this.s.db.coach.findFirst({
+        where: { id, user: { role: "coach", status: "active" } },
+        select: { id: true },
+      }))
+    )
+      fail("Không tìm thấy coach.", 404);
     const booked = await this.s.db.booking.findMany({
       where: { coachId: id, status: "scheduled" },
       select: { start: true },

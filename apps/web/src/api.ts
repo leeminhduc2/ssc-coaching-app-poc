@@ -13,18 +13,21 @@ export async function api<T = any>(
   body?: unknown,
 ): Promise<T> {
   const controller = new AbortController(),
-    timeout = setTimeout(() => controller.abort(), 15000);
+    timeout = setTimeout(() => controller.abort(), 15000),
+    multipart = body instanceof FormData;
   try {
     const res = await fetch(`/api/v1${path}`, {
       method,
       credentials: "include",
       signal: controller.signal,
       headers: {
-        "Content-Type": "application/json",
+        ...(!multipart ? { "Content-Type": "application/json" } : {}),
         "X-SSC-Request": "1",
         ...(method !== "GET" ? { "Idempotency-Key": crypto.randomUUID() } : {}),
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined
+        ? { body: multipart ? body : JSON.stringify(body) }
+        : {}),
     });
     const data = await res.json();
     if (!res.ok)
@@ -71,6 +74,7 @@ export const labels: Record<string, string> = {
   scheduled: "Đã đặt lịch",
   pending: "Chờ xét duyệt",
   active: "Đang hoạt động",
+  disabled: "Đã vô hiệu hóa",
   reserved: "Đang giữ lượt",
   consumed: "Đã dùng lượt",
   released: "Đã hoàn lượt",

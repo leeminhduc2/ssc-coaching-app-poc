@@ -15,7 +15,10 @@ model User {
   rank String @default("Kim Cương")
   timezone String @default("Asia/Ho_Chi_Minh")
   verified Boolean @default(false)
+  status String @default("active")
+  disabledAt DateTime?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   sessions AuthSession[]
   subscriptions Subscription[]
   coach Coach?
@@ -27,6 +30,7 @@ model User {
   enrollment Enrollment?
   notifications Notification[]
   tokens AuthToken[]
+  @@index([role,status,createdAt])
 }
 model AuthSession {
   id String @id @default(uuid())
@@ -153,6 +157,7 @@ model Achievement {
   coach Coach @relation(fields:[coachId],references:[id])
   title String
   description String
+  displayOrder Int @default(0)
 }
 model Video {
   id String @id @default(uuid())

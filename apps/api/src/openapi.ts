@@ -17,10 +17,28 @@ export function describeBodies(doc:OpenAPIObject){
   'post /coaching/sessions/{id}/{action}':{start:string('Giờ mới khi reschedule',{format:'date-time'}),summary:string('Tổng kết khi complete')},
   'put /videos/{id}/progress':{position:{type:'integer',minimum:0,description:'Vị trí theo thời lượng bài học mẫu'},completed:{type:'boolean'}},
   'patch /users/me':{displayName:string('Tên hiển thị'),riotId:string('Riot ID'),rank:string('Hạng hiện tại'),timezone:string('Múi giờ',{enum:['Asia/Ho_Chi_Minh','Asia/Bangkok','UTC']})},
+  'post /admin/users/{id}/reset-password':{password},
   'post /academy/apply':{goal:string('Mục tiêu ứng tuyển, tối thiểu 20 ký tự')},'post /academy/tasks/{id}':{completed:{type:'boolean'}},
   'patch /admin/plans/{id}':{name:string('Tên gói'),description:string('Mô tả'),amount:{type:'integer',minimum:0},active:{type:'boolean'}},
  };
  for(const [key,properties] of Object.entries(bodies)){const [method,path]=key.split(' '),operation=(doc.paths['/api/v1'+path] as any)?.[method];if(operation)operation.requestBody={required:true,content:{'application/json':{schema:{type:'object',properties}}}}}
+ const userFields={
+  email,password,displayName:string('Tên hiển thị'),role:string('Vai trò',{enum:['member','coach','admin']}),
+  riotId:string('Riot ID'),rank:string('Hạng hiện tại'),timezone:string('Múi giờ',{enum:['Asia/Ho_Chi_Minh','Asia/Bangkok','UTC']}),
+  status:string('Trạng thái',{enum:['active','disabled']}),slug:string('Slug coach; bắt buộc khi tạo Coach profile'),
+  headline:string('Tiêu đề hồ sơ coach'),bio:string('Giới thiệu coach'),specialty:string('Chuyên môn coach'),
+  achievement:string('Thành tích nổi bật'),image:string('Ảnh JPEG, PNG hoặc WebP; tối đa 5 MiB',{format:'binary'}),
+ };
+ const multipart=(method:string,path:string,properties:Record<string,Field>,required:string[]=[])=>{const operation=(doc.paths[path] as any)?.[method];if(operation)operation.requestBody={required:true,content:{'multipart/form-data':{schema:{type:'object',properties,required}}}}};
+ multipart('post','/api/v1/admin/users',userFields,['email','password','displayName','role']);
+ multipart('patch','/api/v1/admin/users/{id}',Object.fromEntries(Object.entries(userFields).filter(([name])=>name!=='password')));
+ multipart('patch','/api/v1/coach/profile',{displayName:userFields.displayName,headline:userFields.headline,bio:userFields.bio,specialty:userFields.specialty,achievement:userFields.achievement,image:userFields.image});
+ const listUsers=(doc.paths['/api/v1/admin/users'] as any)?.get;
+ if(listUsers)listUsers.parameters=[
+  {name:'search',in:'query',schema:{type:'string'}},{name:'role',in:'query',schema:{type:'string',enum:['member','coach','admin']}},
+  {name:'status',in:'query',schema:{type:'string',enum:['active','disabled']}},{name:'page',in:'query',schema:{type:'integer',minimum:1,default:1}},
+  {name:'pageSize',in:'query',schema:{type:'integer',minimum:1,maximum:100,default:20}},
+ ];
  for(const [path,item] of Object.entries(doc.paths)){for(const method of ['post','patch','put','delete']){const operation=(item as any)?.[method];if(!operation)continue;operation.parameters??=[];if(!path.includes('/webhooks/'))operation.parameters.push({name:'X-SSC-Request',in:'header',required:true,schema:{type:'string',enum:['1']}});operation.parameters.push({name:'Idempotency-Key',in:'header',description:'UUID mới cho mỗi thao tác; dùng lại cùng key khi retry cùng payload.',schema:{type:'string'}});if(path.includes('/webhooks/'))operation.parameters.push({name:'X-Payment-Signature',in:'header',required:true,description:'HMAC-SHA256 của raw JSON body, ký bằng PAYMENT_WEBHOOK_SECRET.',schema:{type:'string'}})}}
  return doc;
 }

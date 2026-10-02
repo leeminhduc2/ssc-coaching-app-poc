@@ -35,5 +35,12 @@ class SystemController extends BaseController {
     return { status: "ok", database: "postgresql" };
   }
 }
-@Module({ imports: [CoreModule], controllers: [SystemController] })
+@ApiTags("System")
+@Controller()
+export class SscController {
+  @Get("ssc") ssc() {
+    return { status: "ok", data: "ssc qua dang cap" };
+  }
+}
+@Module({ imports: [CoreModule], controllers: [SystemController, SscController] })
 export class SystemModule {}

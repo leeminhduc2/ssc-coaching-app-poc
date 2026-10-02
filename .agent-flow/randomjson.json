@@ -1,0 +1,40 @@
+{
+    "id": "cli:pane:list",
+    "result": {
+        "panes": [
+            {
+                "agent_status": "unknown",
+                "cwd": "C:\\Users\\leeminhduc2",
+                "focused": true,
+                "pane_id": "w5:p1",
+                "revision": 1,
+                "scroll": {
+                    "max_offset_from_bottom": 0,
+                    "offset_from_bottom": 0,
+                    "viewport_rows": 50
+                },
+                "tab_id": "w5:t1",
+                "terminal_id": "term_65cd3a095f56b9",
+                "terminal_title": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "terminal_title_stripped": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "workspace_id": "w5"
+            },
+            {
+                "agent_status": "unknown",
+                "cwd": "D:\\github_repo\\ssc-coaching-app-poc",
+                "focused": false,
+                "pane_id": "w7:p1",
+                "revision": 0,
+                "scroll": {
+                    "max_offset_from_bottom": 0,
+                    "offset_from_bottom": 0,
+                    "viewport_rows": 55
+                },
+                "tab_id": "w7:t1",
+                "terminal_id": "term_65cd580a4f702a",
+                "workspace_id": "w7"
+            }
+        ],
+        "type": "pane_list"
+    }
+}

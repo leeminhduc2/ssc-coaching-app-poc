@@ -5,3 +5,10 @@ dist/
 test-results/
 playwright-report/
 *.log
+# Agent flow runtime artifacts
+.agent-flow/state/
+.agent-flow/reports/
+.agent-flow/logs/
+
+# Optional temp files
+.agent-flow/tmp/
